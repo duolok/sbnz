@@ -1,0 +1,32 @@
+package rules;
+
+rule "Rain Reduces Fire Damage"
+    salience 75
+    when
+        $context : GameContext(weather == "rain")
+        $enemy : Enemy(statusEffects contains "fire")
+    then
+        $enemy.setDamage($enemy.getDamage() * 0.8);
+        System.out.println("Rain reduced fire damage for " + $enemy.getName());
+end
+
+    rule "Fog Enhances Stealth"
+    salience 75
+    when
+        $context : GameContext(weather == "fog")
+        $enemy : Enemy()
+    then
+        $enemy.addAbility("stealth");
+        $enemy.setScore($enemy.getScore() + 10);
+        System.out.println("Fog enhanced stealth for " + $enemy.getName());
+end
+
+rule "Wind Affects Ranged Enemies"
+    salience 75
+    when
+        $context : GameContext(weather == "wind")
+        $enemy : Enemy(abilities contains "ranged")
+    then
+        $enemy.setDamage($enemy.getDamage() * 0.9);
+        System.out.println("Wind affected ranged damage for " + $enemy.getName());
+end
