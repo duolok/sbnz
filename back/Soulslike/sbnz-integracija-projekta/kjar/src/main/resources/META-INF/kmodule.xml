@@ -5,4 +5,7 @@
     <kbase name="cepKbase" eventProcessingMode="stream" packages="cep">
         <ksession name="cepKsession" clockType="pseudo"/>
     </kbase>
+    <kbase name="enemyRules" packages="rules.enemy">
+        <ksession name="enemySession"/>
+    </kbase>
 </kmodule>

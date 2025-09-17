@@ -1,0 +1,65 @@
+package rules.simple;
+
+import com.ftn.sbnz.model.models.Enemy;
+import com.ftn.sbnz.model.models.Player;
+import com.ftn.sbnz.model.models.GameContext;
+
+rule "Create Basic Swamp Enemy"
+    salience 100
+    when
+        $context : GameContext(region == "swamp")
+    then
+        Enemy enemy = new Enemy("Swamp Creature", "creature");
+        enemy.setRegion("swamp");
+        enemy.setHp(1500);
+        enemy.setDamage(200);
+        enemy.setDefense(100);
+        enemy.setBehaviour("aggressive");
+        enemy.addAbility("poison");
+        enemy.setScore(100);
+        insert(enemy);
+        System.out.println("Created Swamp Creature");
+end
+
+rule "Create Basic Castle Enemy"
+    salience 100
+    when
+        $context : GameContext(region == "castle")
+    then
+        Enemy enemy = new Enemy("Castle Guard", "knight");
+        enemy.setRegion("castle");
+        enemy.setHp(2000);
+        enemy.setDamage(250);
+        enemy.setDefense(200);
+        enemy.setBehaviour("defensive");
+        enemy.addAbility("melee");
+        enemy.setScore(100);
+        insert(enemy);
+        System.out.println("Created Castle Guard");
+end
+
+rule "Apply Easy Difficulty"
+    salience 50
+    when
+        $context : GameContext(difficulty == "easy")
+        $enemy : Enemy()
+    then
+        modify($enemy) {
+            setHp($enemy.getHp() * 0.7),
+            setDamage($enemy.getDamage() * 0.7)
+        }
+        System.out.println("Applied easy difficulty to " + $enemy.getName());
+end
+
+rule "Apply Hard Difficulty"
+    salience 50
+    when
+        $context : GameContext(difficulty == "hard")
+        $enemy : Enemy()
+    then
+        modify($enemy) {
+            setHp($enemy.getHp() * 1.5),
+            setDamage($enemy.getDamage() * 1.5)
+        }
+        System.out.println("Applied hard difficulty to " + $enemy.getName());
+end

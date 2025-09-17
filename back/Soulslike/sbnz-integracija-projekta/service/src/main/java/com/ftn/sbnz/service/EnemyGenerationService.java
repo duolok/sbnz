@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -23,19 +23,19 @@ public class EnemyGenerationService {
     
     @Autowired
     public EnemyGenerationService(KieContainer kieContainer) {
-        log.info("Initialising Enemy Generation Service");
+        log.info("Initialising Simplified Enemy Service");
         this.kieContainer = kieContainer;
     }
     
+    /**
+     * Generiše protivnika koristeći Drools pravila ili vraća dummy protivnika
+     */
     public Enemy generateEnemy(GameContext context) {
         log.info("Starting enemy generation for context: " + context);
         
-        KieSession kieSession = kieContainer.newKieSession();
-        List<Enemy> enemyCandidates = new ArrayList<>();
-        
         try {
-            // Set global variable for collecting enemy candidates
-            kieSession.setGlobal("enemyCandidates", enemyCandidates);
+            // Pokušaj da koristiš Drools
+            KieSession kieSession = kieContainer.newKieSession("simpleSession");
             
             // Insert the game context
             kieSession.insert(context);
@@ -44,86 +44,89 @@ public class EnemyGenerationService {
             int rulesFired = kieSession.fireAllRules();
             log.info("Number of rules fired: " + rulesFired);
             
-            // Select the best enemy based on score
-            Enemy selectedEnemy = selectBestEnemy(enemyCandidates);
+            // Get all Enemy objects from session
+            Collection<?> enemies = kieSession.getObjects(object -> object instanceof Enemy);
             
-            if (selectedEnemy != null) {
-                log.info("Selected enemy: " + selectedEnemy);
+            kieSession.dispose();
+            
+            if (!enemies.isEmpty()) {
+                Enemy enemy = (Enemy) enemies.iterator().next();
+                log.info("Generated enemy from rules: " + enemy);
+                return enemy;
             } else {
-                log.warn("No enemy could be generated for the given context");
-                // Return a default enemy if no rules matched
-                selectedEnemy = createDefaultEnemy(context);
+                log.info("No enemies generated from rules, returning dummy enemy");
+                return createDummyEnemy(context);
             }
             
-            return selectedEnemy;
-            
-        } finally {
-            kieSession.dispose();
+        } catch (Exception e) {
+            log.error("Error with Drools, returning dummy enemy", e);
+            return createDummyEnemy(context);
         }
     }
     
-    private Enemy selectBestEnemy(List<Enemy> candidates) {
-        if (candidates.isEmpty()) {
-            return null;
+    /**
+     * Kreira dummy protivnika za testiranje
+     */
+    private Enemy createDummyEnemy(GameContext context) {
+        Enemy dummy = new Enemy("Dummy Enemy", "test");
+        
+        // Osnovno podešavanje na osnovu regiona
+        switch (context.getRegion()) {
+            case "swamp":
+                dummy.setName("Test Swamp Monster");
+                dummy.setHp(1200);
+                dummy.setDamage(150);
+                dummy.addAbility("poison");
+                break;
+            case "castle":
+                dummy.setName("Test Castle Knight");
+                dummy.setHp(1800);
+                dummy.setDamage(200);
+                dummy.addAbility("melee");
+                break;
+            case "mountain":
+                dummy.setName("Test Mountain Beast");
+                dummy.setHp(1500);
+                dummy.setDamage(180);
+                dummy.addAbility("charge");
+                break;
+            default:
+                dummy.setName("Generic Test Enemy");
+                dummy.setHp(1000);
+                dummy.setDamage(100);
+                dummy.addAbility("basic_attack");
         }
         
-        // Sort by score (highest first) and return the best one
-        return candidates.stream()
-                .max(Comparator.comparing(Enemy::getScore))
-                .orElse(candidates.get(0));
-    }
-    
-    private Enemy createDefaultEnemy(GameContext context) {
-        Enemy defaultEnemy = new Enemy("Default Minion", "minion");
-        defaultEnemy.setRegion(context.getRegion());
-        defaultEnemy.setHp(1000);
-        defaultEnemy.setDamage(100);
-        defaultEnemy.setDefense(50);
-        defaultEnemy.setBehaviour("neutral");
-        defaultEnemy.addAbility("melee");
+        // Podešavanje na osnovu težine
+        switch (context.getDifficulty()) {
+            case "easy":
+                dummy.setHp(dummy.getHp() * 0.7);
+                dummy.setDamage(dummy.getDamage() * 0.7);
+                break;
+            case "hard":
+                dummy.setHp(dummy.getHp() * 1.5);
+                dummy.setDamage(dummy.getDamage() * 1.5);
+                break;
+        }
         
-        // Basic adjustments based on player level
+        // Podešavanje na osnovu nivoa igrača
         if (context.getPlayer() != null) {
-            defaultEnemy.adjustForPlayerLevel(context.getPlayer().getLevel());
-        }
-        
-        log.info("Created default enemy: " + defaultEnemy);
-        return defaultEnemy;
-    }
-    
-    // Method for testing backward chaining (trying to spawn a specific boss)
-    public Enemy trySpawnBoss(String bossName, GameContext context) {
-        log.info("Attempting to spawn boss: " + bossName);
-        
-        KieSession kieSession = kieContainer.newKieSession();
-        List<Enemy> enemyCandidates = new ArrayList<>();
-        
-        try {
-            kieSession.setGlobal("enemyCandidates", enemyCandidates);
-            kieSession.insert(context);
-            
-            // Insert a query for specific boss
-            kieSession.insert(bossName);
-            
-            int rulesFired = kieSession.fireAllRules();
-            log.info("Number of rules fired for boss spawn: " + rulesFired);
-            
-            // Look for the boss in candidates
-            Enemy boss = enemyCandidates.stream()
-                    .filter(e -> e.getName().equalsIgnoreCase(bossName))
-                    .findFirst()
-                    .orElse(null);
-            
-            if (boss != null) {
-                log.info("Successfully spawned boss: " + boss);
-            } else {
-                log.info("Could not spawn requested boss, conditions not met");
+            int playerLevel = context.getPlayer().getLevel();
+            if (playerLevel < 10) {
+                dummy.setHp(dummy.getHp() * 0.8);
+                dummy.setDamage(dummy.getDamage() * 0.8);
+            } else if (playerLevel > 30) {
+                dummy.setHp(dummy.getHp() * 1.3);
+                dummy.setDamage(dummy.getDamage() * 1.2);
             }
-            
-            return boss;
-            
-        } finally {
-            kieSession.dispose();
         }
+        
+        dummy.setRegion(context.getRegion());
+        dummy.setDefense(50);
+        dummy.setBehaviour("aggressive");
+        dummy.setScore(50);
+        
+        log.info("Created dummy enemy: " + dummy);
+        return dummy;
     }
 }
