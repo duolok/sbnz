@@ -30,7 +30,6 @@ public class EnemyGenerationController {
     public Enemy testBackwardChaining() {
         Player testPlayer = new Player("BossHunter", 45, Player.PlayerClass.STRENGTH, "greatsword");
         GameContext testContext = new GameContext("castle", "hard", "clear", "day", testPlayer);
-        
         BackwardQuery query = new BackwardQuery("Iron Lord", testContext);
         return enemyService.findSpecificEnemy(query);
     }
