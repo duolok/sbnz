@@ -1,1 +1,219 @@
-package backward;
+package rules.backward;
+
+import com.ftn.sbnz.model.models.*;
+
+// ==================== BACKWARD CHAINING QUERIES ====================
+
+query canSpawnEnemy(String enemyName, GameContext context, Player player)
+    $enemy : Enemy(name == enemyName, region == context.getRegion())
+    GameContext(difficulty == "medium" || difficulty == "medium-hard" || difficulty == "hard")
+    Player(level >= 20)
+end
+
+query canSpawnBoss(String bossName, GameContext context, Player player)
+    $boss : Enemy(name == bossName, type == "boss", region == context.getRegion())
+    GameContext(difficulty == "medium-hard" || difficulty == "hard")
+    Player(level >= 30)
+end
+
+query canSpawnElite(String eliteName, GameContext context, Player player)
+    $elite : Enemy(name == eliteName, hp > 3000 || damage > 400, region == context.getRegion())
+    GameContext(difficulty != "easy")
+    Player(level >= 20)
+end
+
+query findCounterEnemy(Player player, GameContext context)
+    $enemy : Enemy(region == context.getRegion())
+    (
+        (Player(playerClass == Player.PlayerClass.DEX) and 
+         (Enemy(abilities contains "stealth" || statusEffects contains "poison")))
+        or
+        (Player(playerClass == Player.PlayerClass.STRENGTH) and 
+         (Enemy(abilities contains "ranged" || abilities contains "magic")))
+        or
+        (Player(playerClass == Player.PlayerClass.MAGE) and 
+         (Enemy(resistances contains "magic")))
+    )
+end
+
+rule "Check Iron Lord Boss Spawn Conditions"
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy == "Iron Lord", processed == false)
+        $context : GameContext(region == "castle", difficulty == "hard")
+        $player : Player(level >= 40)
+        canSpawnBoss("Iron Lord", $context, $player;)
+    then
+        modify($query) {
+            setConditionsMet(true),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Iron Lord spawn conditions met!");
+end
+
+rule "Check Poison Hydra Boss Spawn Conditions"
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy == "Poison Hydra", processed == false)
+        $context : GameContext(region == "swamp", difficulty == "hard" || difficulty == "medium-hard")
+        $player : Player(level >= 35)
+        canSpawnBoss("Poison Hydra", $context, $player;)
+    then
+        modify($query) {
+            setConditionsMet(true),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Poison Hydra spawn conditions met!");
+end
+
+rule "Check Mountain Dragon Boss Spawn Conditions"
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy == "Mountain Dragon", processed == false)
+        $context : GameContext(region == "mountain", difficulty == "hard")
+        $player : Player(level >= 50)
+        canSpawnBoss("Mountain Dragon", $context, $player;)
+    then
+        modify($query) {
+            setConditionsMet(true),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Mountain Dragon spawn conditions met!");
+end
+
+rule "Check Swamp Witch Elite Conditions"
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy == "Swamp Witch", processed == false)
+        $context : GameContext(region == "swamp", difficulty != "easy")
+        $player : Player(level >= 20)
+        canSpawnElite("Swamp Witch", $context, $player;)
+    then
+        modify($query) {
+            setConditionsMet(true),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Swamp Witch spawn conditions met!");
+end
+
+rule "Check Stone Golem Elite Conditions"
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy == "Stone Golem", processed == false)
+        $context : GameContext(region == "mountain", difficulty == "medium-hard" || difficulty == "hard")
+        $player : Player(level >= 25)
+        canSpawnElite("Stone Golem", $context, $player;)
+    then
+        modify($query) {
+            setConditionsMet(true),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Stone Golem spawn conditions met!");
+end
+
+rule "Fallback to Regional Enemy - Swamp"
+    no-loop true
+    when
+        $query : BackwardQuery(processed == false, conditionsMet == false)
+        $context : GameContext(region == "swamp")
+        $enemy : Enemy(region == "swamp", type != "boss")
+    then
+        modify($query) {
+            setFallbackEnemy($enemy.getName()),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain Fallback: Selected " + $enemy.getName() + " for swamp region");
+end
+
+rule "Fallback to Regional Enemy - Castle"
+    no-loop true
+    when
+        $query : BackwardQuery(processed == false, conditionsMet == false)
+        $context : GameContext(region == "castle")
+        $enemy : Enemy(region == "castle", type != "boss")
+    then
+        modify($query) {
+            setFallbackEnemy($enemy.getName()),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain Fallback: Selected " + $enemy.getName() + " for castle region");
+end
+
+rule "Fallback to Regional Enemy - Mountain"
+    no-loop true
+    when
+        $query : BackwardQuery(processed == false, conditionsMet == false)
+        $context : GameContext(region == "mountain")
+        $enemy : Enemy(region == "mountain", type != "boss")
+    then
+        modify($query) {
+            setFallbackEnemy($enemy.getName()),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain Fallback: Selected " + $enemy.getName() + " for mountain region");
+end
+
+rule "Find Counter for DEX Build"
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy == "AUTO_COUNTER", processed == false)
+        $context : GameContext($player : player)
+        Player(this == $player, playerClass == Player.PlayerClass.DEX)
+        $enemy : Enemy(abilities contains "stealth" || statusEffects contains "poison")
+        findCounterEnemy($player, $context;)
+    then
+        modify($query) {
+            setFallbackEnemy($enemy.getName()),
+            setConditionsMet(true),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Found DEX counter - " + $enemy.getName());
+end
+
+rule "Find Counter for STRENGTH Build"
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy == "AUTO_COUNTER", processed == false)
+        $context : GameContext($player : player)
+        Player(this == $player, playerClass == Player.PlayerClass.STRENGTH)
+        $enemy : Enemy(abilities contains "ranged" || abilities contains "magic")
+        findCounterEnemy($player, $context;)
+    then
+        modify($query) {
+            setFallbackEnemy($enemy.getName()),
+            setConditionsMet(true),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Found STRENGTH counter - " + $enemy.getName());
+end
+
+rule "Find Counter for MAGE Build"
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy == "AUTO_COUNTER", processed == false)
+        $context : GameContext($player : player)
+        Player(this == $player, playerClass == Player.PlayerClass.MAGE)
+        $enemy : Enemy(resistances contains "magic")
+        findCounterEnemy($player, $context;)
+    then
+        modify($query) {
+            setFallbackEnemy($enemy.getName()),
+            setConditionsMet(true),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Found MAGE counter - " + $enemy.getName());
+end
+
+rule "No Conditions Met - Default Fallback"
+    no-loop true
+    when
+        $query : BackwardQuery(processed == false, conditionsMet == false)
+        $context : GameContext()
+        $enemy : Enemy()
+    then
+        modify($query) {
+            setFallbackEnemy($enemy.getName()),
+            setProcessed(true)
+        }
+        System.out.println("Backward Chain: Default fallback to " + $enemy.getName());
+end
