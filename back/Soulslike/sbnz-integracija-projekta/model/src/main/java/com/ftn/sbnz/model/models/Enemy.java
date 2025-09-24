@@ -3,9 +3,26 @@ package com.ftn.sbnz.model.models;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+
+@Entity
+@Table(name = "enemies")
 public class Enemy implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
     private String name;
     private String type;
@@ -13,13 +30,29 @@ public class Enemy implements Serializable {
     private double damage;
     private double defense;
     private String behaviour;
-    private List<String> abilities = new ArrayList<>();
-    private List<String> resistances = new ArrayList<>();
-    private List<String> statusEffects = new ArrayList<>();
     private String region;
-    private double score; // Za evaluaciju najboljeg kandidata
+    private double score;
     
-    public Enemy() {}
+    @ElementCollection
+    private List<String> abilities = new ArrayList<>();
+
+    @ElementCollection
+    private List<String> resistances = new ArrayList<>();
+
+    @ElementCollection
+    private List<String> statusEffects = new ArrayList<>();
+
+    @ElementCollection
+    private Set<String> weaknesses = new HashSet<>();
+    
+    private int experienceReward = 0;
+    private double criticalChance = 0.1;
+    private double dodgeChance = 0.1;
+
+    public Enemy() {
+
+    }
+    
     
     public Enemy(String name, String type) {
         this.name = name;
@@ -28,22 +61,7 @@ public class Enemy implements Serializable {
         this.damage = 100;
         this.defense = 50;
         this.behaviour = "aggressive";
-    }
-    
-    // Helper metode za Drools pravila
-    public void applyDifficultyModifier(double hpModifier, double dmgModifier) {
-        this.hp *= hpModifier;
-        this.damage *= dmgModifier;
-    }
-    
-    public void adjustForPlayerLevel(int playerLevel) {
-        if (playerLevel <= 10) {
-            this.hp *= 0.7;
-            this.damage *= 0.8;
-        } else if (playerLevel >= 50) {
-            this.hp *= 1.5;
-            this.damage *= 1.3;
-        }
+        this.score = 0;
     }
     
     public void addAbility(String ability) {
@@ -64,7 +82,22 @@ public class Enemy implements Serializable {
         }
     }
     
-    // Getters and Setters
+    public void addWeakness(String weakness) {
+        weaknesses.add(weakness);
+    }
+    
+    public boolean isBoss() {
+        return "boss".equals(this.type);
+    }
+    
+    public boolean isElite() {
+        return "elite".equals(this.type) || this.hp > 3000 || this.damage > 400;
+    }
+
+    // All getters and setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     
@@ -83,6 +116,12 @@ public class Enemy implements Serializable {
     public String getBehaviour() { return behaviour; }
     public void setBehaviour(String behaviour) { this.behaviour = behaviour; }
     
+    public String getRegion() { return region; }
+    public void setRegion(String region) { this.region = region; }
+    
+    public double getScore() { return score; }
+    public void setScore(double score) { this.score = score; }
+    
     public List<String> getAbilities() { return abilities; }
     public void setAbilities(List<String> abilities) { this.abilities = abilities; }
     
@@ -92,25 +131,6 @@ public class Enemy implements Serializable {
     public List<String> getStatusEffects() { return statusEffects; }
     public void setStatusEffects(List<String> statusEffects) { this.statusEffects = statusEffects; }
     
-    public String getRegion() { return region; }
-    public void setRegion(String region) { this.region = region; }
-    
-    public double getScore() { return score; }
-    public void setScore(double score) { this.score = score; }
-    
-    @Override
-    public String toString() {
-        return "Enemy{" +
-                "name='" + name + '\'' +
-                ", type='" + type + '\'' +
-                ", hp=" + hp +
-                ", damage=" + damage +
-                ", defense=" + defense +
-                ", behaviour='" + behaviour + '\'' +
-                ", abilities=" + abilities +
-                ", resistances=" + resistances +
-                ", statusEffects=" + statusEffects +
-                ", region='" + region + '\'' +
-                '}';
-    }
+    public Set<String> getWeaknesses() { return weaknesses; }
+    public void setWeaknesses(Set<String> weaknesses) { this.weaknesses = weaknesses; }
 }
