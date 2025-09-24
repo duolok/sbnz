@@ -1,0 +1,43 @@
+template header
+enemyName
+region
+requiredDifficulty
+
+package templates;
+
+import com.ftn.sbnz.model.models.Enemy;
+import com.ftn.sbnz.model.models.GameContext;
+
+global java.util.List enemyCandidates;
+
+template "difficulty-adjustment-rules"
+
+rule "Apply @{requiredDifficulty} Difficulty for @{enemyName} in @{region}"
+    agenda-group "difficulty-adjustment"
+    salience 90
+    when
+        $context : GameContext(region == "@{region}", difficulty == "@{requiredDifficulty}")
+        $enemy : Enemy(name == "@{enemyName}")
+    then
+        double hpMultiplier = 1.0;
+        double dmgMultiplier = 1.0;
+        
+        if ("@{requiredDifficulty}".equals("easy")) {
+            hpMultiplier = 0.6;
+            dmgMultiplier = 0.6;
+        } else if ("@{requiredDifficulty}".equals("medium-hard")) {
+            hpMultiplier = 1.5;
+            dmgMultiplier = 1.5;
+        } else if ("@{requiredDifficulty}".equals("hard")) {
+            hpMultiplier = 2.5;
+            dmgMultiplier = 2.0;
+        }
+        
+        modify($enemy) {
+            setHp($enemy.getHp() * hpMultiplier),
+            setDamage($enemy.getDamage() * dmgMultiplier)
+        }
+        System.out.println("Difficulty @{requiredDifficulty} applied to @{enemyName}");
+end
+
+end template

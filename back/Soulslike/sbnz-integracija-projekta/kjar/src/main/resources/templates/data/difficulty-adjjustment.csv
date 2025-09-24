@@ -1,0 +1,16 @@
+enemyName,region,requiredDifficulty
+Swamp Creature,swamp,easy
+Swamp Creature,swamp,medium
+Swamp Creature,swamp,medium-hard
+Swamp Creature,swamp,hard
+Iron Knight,castle,easy
+Iron Knight,castle,medium
+Iron Knight,castle,medium-hard
+Iron Knight,castle,hard
+Mountain Harpy,mountain,easy
+Mountain Harpy,mountain,medium
+Mountain Harpy,mountain,medium-hard
+Mountain Harpy,mountain,hard
+Iron Lord,castle,hard
+Poison Hydra,swamp,hard
+Mountain Dragon,mountain,hard
