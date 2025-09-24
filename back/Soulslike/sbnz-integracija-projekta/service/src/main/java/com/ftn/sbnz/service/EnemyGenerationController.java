@@ -1,57 +1,76 @@
 package com.ftn.sbnz.service;
 
+import com.ftn.sbnz.model.models.BackwardQuery;
 import com.ftn.sbnz.model.models.Enemy;
 import com.ftn.sbnz.model.models.GameContext;
 import com.ftn.sbnz.model.models.Player;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/api/enemy")
 public class EnemyGenerationController {
     
     @Autowired
     private EnemyGenerationService enemyService;
     
-    @GetMapping("/dummy")
-    public Enemy getDummyEnemy() {
-        // Kreiraj test kontekst
-        Player player = new Player("Test", 20, Player.PlayerClass.STRENGTH, "sword");
-        GameContext context = new GameContext("swamp", "medium", "clear", "day", player);
-        
+    @PostMapping("/generate/forward")
+    public Enemy generateEnemyForward(@RequestBody GameContext context) {
         return enemyService.generateEnemy(context);
     }
     
-    @GetMapping("/swamp")
-    public Enemy getSwampEnemy() {
-        Player player = new Player("Test", 15, Player.PlayerClass.DEX, "dagger");
-        GameContext context = new GameContext("swamp", "easy", "fog", "night", player);
-        
-        return enemyService.generateEnemy(context);
+    @PostMapping("/generate/backward")
+    public Enemy generateEnemyBackward(@RequestBody BackwardQuery query) {
+        return enemyService.findSpecificEnemy(query);
     }
     
-    @GetMapping("/castle")
-    public Enemy getCastleEnemy() {
-        Player player = new Player("Test", 30, Player.PlayerClass.MAGE, "staff");
-        GameContext context = new GameContext("castle", "hard", "rain", "day", player);
+    @GetMapping("/test/backward")
+    public Enemy testBackwardChaining() {
+        Player testPlayer = new Player("BossHunter", 45, Player.PlayerClass.STRENGTH, "greatsword");
+        GameContext testContext = new GameContext("castle", "hard", "clear", "day", testPlayer);
         
-        return enemyService.generateEnemy(context);
+        BackwardQuery query = new BackwardQuery("Iron Lord", testContext);
+        return enemyService.findSpecificEnemy(query);
+    }
+
+    @GetMapping("/test/backward/elite")
+    public Enemy testBackwardChainingElite() {
+        Player testPlayer = new Player("EliteHunter", 25, Player.PlayerClass.DEX, "bow");
+        GameContext testContext = new GameContext("swamp", "medium-hard", "fog", "night", testPlayer);
+        
+        BackwardQuery query = new BackwardQuery("Swamp Witch", testContext);
+        return enemyService.findSpecificEnemy(query);
+    }
+
+    @GetMapping("/test/backward/counter")
+    public Enemy testBackwardChainingCounter() {
+        Player testPlayer = new Player("MagePlayer", 30, Player.PlayerClass.MAGE, "staff");
+        GameContext testContext = new GameContext("castle", "hard", "clear", "day", testPlayer);
+        
+        BackwardQuery query = new BackwardQuery("AUTO_COUNTER", testContext);
+        return enemyService.findSpecificEnemy(query);
     }
     
-    @GetMapping("/custom")
-    public Enemy getCustomEnemy(
+    @GetMapping("/test/custom")
+    public Enemy testCustomEnemy(
             @RequestParam(defaultValue = "swamp") String region,
             @RequestParam(defaultValue = "medium") String difficulty,
-            @RequestParam(defaultValue = "20") int playerLevel) {
+            @RequestParam(defaultValue = "25") int playerLevel,
+            @RequestParam(defaultValue = "STRENGTH") String playerClass,
+            @RequestParam(defaultValue = "clear") String weather,
+            @RequestParam(defaultValue = "day") String timeOfDay) {
         
-        Player player = new Player("Test", playerLevel, Player.PlayerClass.STRENGTH, "sword");
-        GameContext context = new GameContext(region, difficulty, "clear", "day", player);
+        Player.PlayerClass pClass = Player.PlayerClass.valueOf(playerClass);
+        Player player = new Player("TestPlayer", playerLevel, pClass, "sword");
+        GameContext context = new GameContext(region, difficulty, weather, timeOfDay, player);
         
         return enemyService.generateEnemy(context);
     }
     
     @GetMapping("/info")
     public String getInfo() {
-        return "Simple Test API is working! Try: /api/test/dummy, /api/test/swamp, /api/test/castle";
+        return "Enemy Generation API is working! Available endpoints: /test/forward, /test/backward, /test/custom";
     }
 }
