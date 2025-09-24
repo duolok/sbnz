@@ -1,0 +1,13 @@
+package rules;
+
+global java.util.List enemyCandidates;
+
+rule "Filter enemies by region"
+salience 100
+when
+    $context: GameContext($region: region)
+    $enemy: Enemy(region == $region) from enemyCandidates
+then
+    enemyCandidates.add($enemy);
+    System.out.println("Added " + $enemy.getName() + " to candidates for region: " + $region);
+end
