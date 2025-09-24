@@ -1,0 +1,100 @@
+package rules;
+
+global java.util.List enemyCandidates;
+
+rule "Counter DEX Build - Stealth"
+    agenda-group "player-build-counter"
+    salience 80
+    no-loop true
+    when
+        $context : GameContext($player : player)
+        Player(this == $player, playerClass == Player.PlayerClass.DEX)
+        $enemy : Enemy($dmg : damage, $score : score, abilities contains "stealth") from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.2),
+            setScore($score + 20)
+        }
+        System.out.println("Enhanced " + $enemy.getName() + " (stealth) to counter DEX build");
+end
+
+rule "Counter DEX Build - Poison"
+    agenda-group "player-build-counter"
+    salience 80
+    no-loop true
+    when
+        $context : GameContext($player : player)
+        Player(this == $player, playerClass == Player.PlayerClass.DEX)
+        $enemy : Enemy($dmg : damage, $score : score, statusEffects contains "poison") from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.2),
+            setScore($score + 20)
+        }
+        System.out.println("Enhanced " + $enemy.getName() + " (poison) to counter DEX build");
+end
+
+rule "Counter STRENGTH Build - Ranged"
+    agenda-group "player-build-counter"
+    salience 80
+    no-loop true
+    when
+        $context : GameContext($player : player)
+        Player(this == $player, playerClass == Player.PlayerClass.STRENGTH)
+        $enemy : Enemy($dmg : damage, $score : score, abilities contains "ranged") from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.2),
+            setScore($score + 20)
+        }
+        System.out.println("Enhanced " + $enemy.getName() + " (ranged) to counter STRENGTH build");
+end
+
+rule "Counter STRENGTH Build - Magic"
+    agenda-group "player-build-counter"
+    salience 80
+    no-loop true
+    when
+        $context : GameContext($player : player)
+        Player(this == $player, playerClass == Player.PlayerClass.STRENGTH)
+        $enemy : Enemy($dmg : damage, $score : score, abilities contains "magic") from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.2),
+            setScore($score + 20)
+        }
+        System.out.println("Enhanced " + $enemy.getName() + " (magic) to counter STRENGTH build");
+end
+
+
+rule "Counter MAGE Build"
+    agenda-group "player-build-counter"
+    salience 80
+    no-loop true
+    when
+        $context : GameContext($player : player, difficulty == "hard")
+        Player(this == $player, playerClass == Player.PlayerClass.MAGE)
+        $enemy : Enemy($score : score) from enemyCandidates
+    then
+        modify($enemy) {
+            addResistance("magic"),
+            setScore($score + 15)
+        }
+        System.out.println("Added magic resistance to " + $enemy.getName() + " to counter MAGE build");
+end
+
+rule "Counter MAGE Build - Medium-Hard Difficulty"
+    agenda-group "player-build-counter"
+    salience 80
+    no-loop true
+    when
+        $context : GameContext($player : player, difficulty == "medium-hard")
+        Player(this == $player, playerClass == Player.PlayerClass.MAGE)
+        $enemy : Enemy($score : score) from enemyCandidates
+    then
+        modify($enemy) {
+            addResistance("magic"),
+            setScore($score + 15)
+        }
+        System.out.println("Added magic resistance to " + $enemy.getName() + " to counter MAGE build");
+end
