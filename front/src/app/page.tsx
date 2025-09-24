@@ -31,7 +31,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [generatedEnemy, setGeneratedEnemy] = useState<Enemy | null>(null);
   const [targetEnemyName, setTargetEnemyName] = useState('Iron Lord');
-  const [useMockData, setUseMockData] = useState(true); // Za development bez backend-a
+  const [useMockData, setUseMockData] = useState(false); // Za development bez backend-a
 
   const [gameContext, setGameContext] = useState<GameContext>({
     region: 'swamp',
@@ -201,13 +201,6 @@ export default function HomePage() {
               </TabsList>
 
               <TabsContent value="forward" className="space-y-6">
-                <Alert className="bg-zinc-900 border-zinc-800">
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  <AlertDescription className="text-zinc-300">
-                    <strong className="text-yellow-500">Forward Chaining:</strong> Generiše neprijatelja na osnovu konteksta igre koristeći pravila i template-e.
-                  </AlertDescription>
-                </Alert>
-
                 <GameContextForm context={gameContext} onChange={setGameContext} />
 
                 <Button
@@ -230,13 +223,6 @@ export default function HomePage() {
               </TabsContent>
 
               <TabsContent value="backward" className="space-y-6">
-                <Alert className="bg-zinc-900 border-zinc-800">
-                  <Target className="h-4 w-4 text-purple-500" />
-                  <AlertDescription className="text-zinc-300">
-                    <strong className="text-purple-500">Backward Chaining:</strong> Pokušava da generiše specifičnog neprijatelja proveravajući da li su uslovi ispunjeni.
-                  </AlertDescription>
-                </Alert>
-
                 <Card className="souls-border bg-gradient-to-br from-zinc-900 to-black">
                   <CardHeader>
                     <CardTitle className="text-xl text-orange-400">Ciljani Neprijatelj</CardTitle>

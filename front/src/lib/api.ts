@@ -2,7 +2,14 @@
 import axios from 'axios';
 import { GameContext, Enemy, BackwardQuery } from '@/types/enemy';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const getApiBaseUrl = () => {
+    if (typeof window === 'undefined') {
+        return process.env.BACKEND_URL || 'http://localhost:8080/api';
+    }
+    return 'http://localhost:8080/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
     baseURL: API_BASE_URL,
