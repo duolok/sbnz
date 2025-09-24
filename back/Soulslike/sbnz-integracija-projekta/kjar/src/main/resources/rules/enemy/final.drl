@@ -1,0 +1,32 @@
+package rules;
+
+rule "Select Highest Scoring Enemy"
+    agenda-group "final-selection"
+    salience 100
+    when
+        $context : GameContext()
+        $enemy : Enemy($score : score) from enemyCandidates
+        not Enemy(score > $score) from enemyCandidates
+    then
+        selectedEnemy = $enemy;
+        modify($enemy) {
+            setSelected(true)
+        }
+        System.out.println("Phase 7 - Selected: " + $enemy.getName() + " (Score: " + $score + ")");
+end
+
+rule "Fallback Selection"
+    agenda-group "final-selection"
+    salience 50
+    when
+        $context : GameContext()
+        exists(Enemy() from enemyCandidates)
+        not Enemy(selected == true)
+    then
+        Enemy firstEnemy = (Enemy)enemyCandidates.get(0);
+        selectedEnemy = firstEnemy;
+        modify(firstEnemy) {
+            setSelected(true)
+        }
+        System.out.println("Phase 7 - Fallback selected: " + firstEnemy.getName());
+end
