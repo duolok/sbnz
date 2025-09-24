@@ -1,0 +1,113 @@
+template header
+enemyName
+enemyType
+region
+minHp
+maxHp
+minDamage
+maxDamage
+defense
+behaviour
+primaryAbility
+secondaryAbility
+statusEffect
+resistance
+baseScore
+minPlayerLevel
+maxPlayerLevel
+requiredDifficulty
+
+package rules.templates;
+
+import com.ftn.sbnz.model.models.Enemy;
+import com.ftn.sbnz.model.models.Player;
+import com.ftn.sbnz.model.models.GameContext;
+
+template "enemy-generation-rules"
+
+rule "Generate Enemy @{row.rowNumber} - @{enemyName}"
+    agenda-group "template-generation"
+    salience 100
+    when
+        $context : GameContext(region == "@{region}")
+        $player : Player(level >= @{minPlayerLevel}, level <= @{maxPlayerLevel})
+    then
+        Enemy enemy = new Enemy("@{enemyName}", "@{enemyType}");
+        enemy.setRegion("@{region}");
+        enemy.setHp(@{minHp} + (Math.random() * (@{maxHp} - @{minHp})));
+        enemy.setDamage(@{minDamage} + (Math.random() * (@{maxDamage} - @{minDamage})));
+        enemy.setDefense(@{defense});
+        enemy.setBehaviour("@{behaviour}");
+        enemy.addAbility("@{primaryAbility}");
+        enemy.addAbility("@{secondaryAbility}");
+        enemy.addStatusEffect("@{statusEffect}");
+        enemy.addResistance("@{resistance}");
+        enemy.setScore(@{baseScore});
+        enemyCandidates.add(enemy);
+        insert(enemy);
+        System.out.println("Template Generated: @{enemyName} for @{region}");
+end
+
+end template
+
+template "difficulty-adjustment-rules"
+
+rule "Apply @{requiredDifficulty} Difficulty for @{enemyName}"
+    agenda-group "difficulty-adjustment"
+    salience 90
+    when
+        $context : GameContext(region == "@{region}", difficulty == "@{requiredDifficulty}")
+        $enemy : Enemy(name == "@{enemyName}", difficultyApplied == false)
+    then
+        double hpMultiplier = 1.0;
+        double dmgMultiplier = 1.0;
+        
+        if ("@{requiredDifficulty}".equals("easy")) {
+            hpMultiplier = 0.6;
+            dmgMultiplier = 0.6;
+        } else if ("@{requiredDifficulty}".equals("medium-hard")) {
+            hpMultiplier = 1.5;
+            dmgMultiplier = 1.5;
+        } else if ("@{requiredDifficulty}".equals("hard")) {
+            hpMultiplier = 2.5;
+            dmgMultiplier = 2.0;
+        }
+        
+        modify($enemy) {
+            setHp($enemy.getHp() * hpMultiplier),
+            setDamage($enemy.getDamage() * dmgMultiplier),
+            setDifficultyApplied(true)
+        }
+        System.out.println("Difficulty @{requiredDifficulty} applied to @{enemyName}");
+end
+
+end template
+
+template "boss-generation-rules"
+
+rule "Generate Boss @{row.rowNumber} - @{enemyName}"
+    agenda-group "template-generation"
+    salience 110
+    when
+        $context : GameContext(region == "@{region}", difficulty == "@{requiredDifficulty}")
+        $player : Player(level >= @{minPlayerLevel})
+        not Enemy(type == "boss", region == "@{region}")
+    then
+        Enemy boss = new Enemy("@{enemyName}", "boss");
+        boss.setRegion("@{region}");
+        boss.setHp(@{maxHp});
+        boss.setDamage(@{maxDamage});
+        boss.setDefense(@{defense} * 1.5);
+        boss.setBehaviour("@{behaviour}");
+        boss.addAbility("@{primaryAbility}");
+        boss.addAbility("@{secondaryAbility}");
+        boss.addAbility("special-attack");
+        boss.addStatusEffect("@{statusEffect}");
+        boss.addResistance("@{resistance}");
+        boss.setScore(@{baseScore} * 2);
+        enemyCandidates.add(boss);
+        insert(boss);
+        System.out.println("Boss Template Generated: @{enemyName} for @{region}");
+end
+
+end template
