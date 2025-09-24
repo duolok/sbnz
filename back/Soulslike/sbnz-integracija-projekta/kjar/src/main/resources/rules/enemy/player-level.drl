@@ -1,6 +1,6 @@
-package rules;
+package rules.enemy;
 
-global java.util.List enemyCandidates;
+import com.ftn.sbnz.model.models.*;
 
 rule "Adjust for Low Level Player - Modify"
     agenda-group "player-level-adjustment"
@@ -13,7 +13,7 @@ rule "Adjust for Low Level Player - Modify"
     then
         modify($enemy) {
             setHp($hp * 0.7),
-            setDamage($dmg * 0.8),
+            setDamage($dmg * 0.8)
         }
         System.out.println("Adjusted " + $enemy.getName() + " for low level player");
 end
@@ -29,7 +29,7 @@ rule "Adjust for Mid Level Player - Modify"
     then
         modify($enemy) {
             setHp($hp * 1.0),
-            setDamage($dmg * 1.0),
+            setDamage($dmg * 1.0)
         }
         System.out.println("No adjustment needed for mid-level player");
 end
@@ -45,7 +45,7 @@ rule "Adjust for High Level Player - Modify"
     then
         modify($enemy) {
             setHp($hp * 1.5),
-            setDamage($dmg * 1.3),
+            setDamage($dmg * 1.3)
         }
         System.out.println("Adjusted " + $enemy.getName() + " for high level player");
 end
@@ -62,7 +62,7 @@ rule "Adjust for Very High Level Player - Modify"
         modify($enemy) {
             setHp($hp * 2.5),
             setDamage($dmg * 2.0),
-            setDefense($def * 1.5),
+            setDefense($def * 1.5)
         }
         System.out.println("Adjusted " + $enemy.getName() + " for very high level player");
 end

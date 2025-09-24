@@ -1,8 +1,9 @@
-package rules;
+package rules.enemy;
 
-global java.util.List enemyCandidates;
+import com.ftn.sbnz.model.models.*;
 
 rule "Filter enemies by region"
+no-loop true
 salience 100
 when
     $context: GameContext($region: region)

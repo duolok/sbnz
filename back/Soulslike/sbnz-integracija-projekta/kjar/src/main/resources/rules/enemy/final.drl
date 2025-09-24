@@ -1,32 +1,34 @@
-package rules;
+package rules.enemy;
 
-rule "Select Highest Scoring Enemy"
+import com.ftn.sbnz.model.models.*;
+
+global java.util.List enemyCandidates;
+global com.ftn.sbnz.model.models.Enemy selectedEnemy;
+
+rule "Select Best Enemy by Score"
     agenda-group "final-selection"
     salience 100
     when
         $context : GameContext()
-        $enemy : Enemy($score : score) from enemyCandidates
-        not Enemy(score > $score) from enemyCandidates
+        accumulate(
+            Enemy($score : score) from enemyCandidates,
+            $maxScore : max($score)
+        )
+        $bestEnemy : Enemy(score == $maxScore) from enemyCandidates
     then
-        selectedEnemy = $enemy;
-        modify($enemy) {
-            setSelected(true)
-        }
-        System.out.println("Phase 7 - Selected: " + $enemy.getName() + " (Score: " + $score + ")");
+        selectedEnemy = $bestEnemy;
+        System.out.println("Phase 7 - Selected: " + $bestEnemy.getName() + " (Score: " + $maxScore + ")");
 end
 
-rule "Fallback Selection"
+rule "Fallback Selection - No Score"
     agenda-group "final-selection"
     salience 50
     when
         $context : GameContext()
         exists(Enemy() from enemyCandidates)
-        not Enemy(selected == true)
+        eval(selectedEnemy == null)
     then
         Enemy firstEnemy = (Enemy)enemyCandidates.get(0);
         selectedEnemy = firstEnemy;
-        modify(firstEnemy) {
-            setSelected(true)
-        }
         System.out.println("Phase 7 - Fallback selected: " + firstEnemy.getName());
 end

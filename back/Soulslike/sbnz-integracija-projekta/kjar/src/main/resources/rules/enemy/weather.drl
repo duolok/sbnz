@@ -1,6 +1,6 @@
-package rules;
+package rules.enemy;
 
-global java.util.List enemyCandidates;
+import com.ftn.sbnz.model.models.*;
 
 rule "Rain Reduces Fire Damage - Modify"
     agenda-group "weather-effects"

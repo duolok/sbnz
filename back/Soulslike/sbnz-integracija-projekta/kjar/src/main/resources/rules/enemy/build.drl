@@ -1,6 +1,6 @@
-package rules;
+package rules.enemy;
 
-global java.util.List enemyCandidates;
+import com.ftn.sbnz.model.models.*;
 
 rule "Counter DEX Build - Stealth"
     agenda-group "player-build-counter"

@@ -1,6 +1,6 @@
-package rules;
+package rules.enemy;
 
-global java.util.List enemyCandidates;
+import com.ftn.sbnz.model.models.*;
 
 rule "Night Enhances Witch"
     agenda-group "time-of-day-effects"

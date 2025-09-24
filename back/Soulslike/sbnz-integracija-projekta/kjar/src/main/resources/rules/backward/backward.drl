@@ -2,8 +2,6 @@ package rules.backward;
 
 import com.ftn.sbnz.model.models.*;
 
-// ==================== BACKWARD CHAINING QUERIES ====================
-
 query canSpawnEnemy(String enemyName, GameContext context, Player player)
     $enemy : Enemy(name == enemyName, region == context.getRegion())
     GameContext(difficulty == "medium" || difficulty == "medium-hard" || difficulty == "hard")
