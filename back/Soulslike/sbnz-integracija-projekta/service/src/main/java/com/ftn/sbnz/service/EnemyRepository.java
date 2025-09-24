@@ -12,6 +12,9 @@ import java.util.List;
 public interface EnemyRepository extends JpaRepository<Enemy, Long> {
     
     List<Enemy> findByRegion(String region);
+
+    @Query("SELECT e FROM Enemy e WHERE e.name = :name")
+    List<Enemy> findByName(@Param("name") String name);
     
     @Query("SELECT e FROM Enemy e WHERE e.region = :region AND e.score >= :minScore ORDER BY e.score DESC")
     List<Enemy> findByRegionAndMinScore(@Param("region") String region, @Param("minScore") double minScore);
