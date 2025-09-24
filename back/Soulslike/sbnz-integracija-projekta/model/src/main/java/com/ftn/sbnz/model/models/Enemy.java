@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
