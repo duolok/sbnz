@@ -144,7 +144,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-black to-black">
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-96 h-96 bg-orange-900 rounded-full opacity-5 blur-3xl" />
@@ -188,15 +188,15 @@ export default function HomePage() {
                   value="forward"
                   className="data-[state=active]:bg-orange-900 data-[state=active]:text-orange-200"
                 >
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  Forward Chaining
+                  <ArrowRight className="w-4 h-5 mr-2" />
+                  Forward Chain
                 </TabsTrigger>
                 <TabsTrigger
                   value="backward"
                   className="data-[state=active]:bg-orange-900 data-[state=active]:text-orange-200"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Backward Chaining
+                  Backward Chain
                 </TabsTrigger>
               </TabsList>
 
@@ -265,7 +265,7 @@ export default function HomePage() {
                 <Button
                   onClick={handleBackwardGeneration}
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 text-lg"
+                  className="w-full bg-gradient-to-r from-purple-600 to-purple-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold py-3 text-lg"
                 >
                   {loading ? (
                     <>
