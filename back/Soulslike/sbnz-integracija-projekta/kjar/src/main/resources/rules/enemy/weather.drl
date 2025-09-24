@@ -1,32 +1,63 @@
 package rules;
 
-rule "Rain Reduces Fire Damage"
+global java.util.List enemyCandidates;
+
+rule "Rain Reduces Fire Damage - Modify"
+    agenda-group "weather-effects"
     salience 75
+    no-loop true
     when
         $context : GameContext(weather == "rain")
-        $enemy : Enemy(statusEffects contains "fire")
+        $enemy : Enemy($dmg : damage, statusEffects contains "fire") from enemyCandidates
     then
-        $enemy.setDamage($enemy.getDamage() * 0.8);
+        modify($enemy) {
+            setDamage($dmg * 0.8)
+        }
         System.out.println("Rain reduced fire damage for " + $enemy.getName());
 end
 
-    rule "Fog Enhances Stealth"
+rule "Fog Enhances Stealth - Modify"
+    agenda-group "weather-effects"
     salience 75
+    no-loop true
     when
         $context : GameContext(weather == "fog")
-        $enemy : Enemy()
+        $enemy : Enemy($score : score) from enemyCandidates
     then
-        $enemy.addAbility("stealth");
-        $enemy.setScore($enemy.getScore() + 10);
+        modify($enemy) {
+            addAbility("stealth"),
+            setScore($score + 10)
+        }
         System.out.println("Fog enhanced stealth for " + $enemy.getName());
 end
 
-rule "Wind Affects Ranged Enemies"
+rule "Sandstorm Enhances Desert Enemies - Modify"
+    agenda-group "weather-effects"
     salience 75
+    no-loop true
     when
-        $context : GameContext(weather == "wind")
-        $enemy : Enemy(abilities contains "ranged")
+        $context : GameContext(weather == "sandstorm", region == "desert")
+        $enemy : Enemy($dmg : damage, $score : score, region == "desert") from enemyCandidates
     then
-        $enemy.setDamage($enemy.getDamage() * 0.9);
-        System.out.println("Wind affected ranged damage for " + $enemy.getName());
+        modify($enemy) {
+            setDamage($dmg * 1.2),
+            addAbility("sand-veil"),
+            setScore($score + 15)
+        }
+        System.out.println("Sandstorm enhanced " + $enemy.getName());
+end
+
+rule "Snow Enhances Ice Enemies - Modify"
+    agenda-group "weather-effects"
+    salience 75
+    no-loop true
+    when
+        $context : GameContext(weather == "snow")
+        $enemy : Enemy($dmg : damage, $def : defense, statusEffects contains "ice") from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.2),
+            setDefense($def * 1.1)
+        }
+        System.out.println("Snow enhanced ice abilities for " + $enemy.getName());
 end
