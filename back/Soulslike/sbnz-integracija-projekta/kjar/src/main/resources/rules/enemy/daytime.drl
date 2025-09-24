@@ -1,0 +1,82 @@
+package rules;
+
+global java.util.List enemyCandidates;
+
+rule "Night Enhances Witch"
+    agenda-group "time-of-day-effects"
+    salience 70
+    no-loop true
+    when
+        $context : GameContext(timeOfDay == "night")
+        $enemy : Enemy(type == "witch", $dmg : damage, $hp : hp, $score : score) from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.15),
+            setHp($hp * 1.1),
+            setScore($score + 15)
+        }
+        System.out.println("Night enhanced " + $enemy.getName());
+end
+
+rule "Night Enhances Goblin"
+    agenda-group "time-of-day-effects"
+    salience 70
+    no-loop true
+    when
+        $context : GameContext(timeOfDay == "night")
+        $enemy : Enemy(type == "goblin", $dmg : damage, $hp : hp, $score : score) from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.15),
+            setHp($hp * 1.1),
+            setScore($score + 15)
+        }
+        System.out.println("Night enhanced " + $enemy.getName());
+end
+
+rule "Night Enhances Undead"
+    agenda-group "time-of-day-effects"
+    salience 70
+    no-loop true
+    when
+        $context : GameContext(timeOfDay == "night")
+        $enemy : Enemy(type == "undead", $dmg : damage, $hp : hp, $score : score) from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.15),
+            setHp($hp * 1.1),
+            setScore($score + 15)
+        }
+        System.out.println("Night enhanced " + $enemy.getName());
+end
+
+rule "Night Enhances Demon"
+    agenda-group "time-of-day-effects"
+    salience 70
+    no-loop true
+    when
+        $context : GameContext(timeOfDay == "night")
+        $enemy : Enemy(type == "demon", $dmg : damage, $hp : hp, $score : score) from enemyCandidates
+    then
+        modify($enemy) {
+            setDamage($dmg * 1.15),
+            setHp($hp * 1.1),
+            setScore($score + 15)
+        }
+        System.out.println("Night enhanced " + $enemy.getName());
+end
+
+rule "Day Weakens Undead"
+    agenda-group "time-of-day-effects"
+    salience 70
+    no-loop true
+    when
+        $context : GameContext(timeOfDay == "day")
+        $enemy : Enemy(type == "undead", $hp : hp, $def : defense) from enemyCandidates
+    then
+        modify($enemy) {
+            setHp($hp * 0.8),
+            setDefense($def * 0.9)
+        }
+        System.out.println("Daylight weakened " + $enemy.getName());
+end
