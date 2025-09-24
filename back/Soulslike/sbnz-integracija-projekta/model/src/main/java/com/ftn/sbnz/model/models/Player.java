@@ -1,9 +1,11 @@
 package com.ftn.sbnz.model.models;
 
 import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Player implements Serializable {
     private static final long serialVersionUID = 1L;
+    private static final AtomicLong ID_GENERATOR = new AtomicLong(1);
     
     private Long id;
     private String name;
@@ -18,9 +20,12 @@ public class Player implements Serializable {
         STRENGTH, DEX, MAGE, BALANCED
     }
     
-    public Player() {}
+    public Player() {
+        this.id = ID_GENERATOR.getAndIncrement();
+    }
     
     public Player(String name, int level, PlayerClass playerClass, String weaponType) {
+        this();
         this.name = name;
         this.level = level;
         this.playerClass = playerClass;
@@ -28,6 +33,16 @@ public class Player implements Serializable {
         this.hp = 100 + (level * 20);
         this.damage = 50 + (level * 5);
         this.defense = 30 + (level * 3);
+    }
+    
+    public double getClassModifier() {
+        switch(this.playerClass) {
+            case DEX: return 1.1;
+            case STRENGTH: return 1.2;
+            case MAGE: return 0.9;
+            case BALANCED: return 1.0;
+            default: return 1.0;
+        }
     }
     
     public Long getId() { return id; }
