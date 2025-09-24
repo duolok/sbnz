@@ -1,41 +1,67 @@
 package rules;
 
+global java.util.List enemyCandidates;
+
 rule "Apply Easy Difficulty"
+    agenda-group "difficulty-adjustment"
     salience 90
+    no-loop true
     when
         $context : GameContext(difficulty == "easy")
-        $enemy : Enemy()
+        $enemy : Enemy($hp : hp, $dmg : damage, $def : defense) from enemyCandidates
     then
-        $enemy.applyDifficultyModifier(0.6, 0.6);
+        modify($enemy) {
+            setHp($hp * 0.6),
+            setDamage($dmg * 0.6),
+            setDefense($def * 0.7),
+        }
         System.out.println("Applied easy difficulty to " + $enemy.getName());
 end
 
 rule "Apply Medium Difficulty"
+    agenda-group "difficulty-adjustment"
     salience 90
+    no-loop true
     when
         $context : GameContext(difficulty == "medium")
-        $enemy : Enemy()
+        $enemy : Enemy($hp : hp, $dmg: damage, $def: defense) from enemyCandidates
     then
-        $enemy.applyDifficultyModifier(1.0, 1.0);
+        modify($enemy) {
+            setHp($hp * 1.0),
+            setDamage($dmg * 1.0),
+            setDefense($def * 1.0),
+        }
         System.out.println("Applied medium difficulty to " + $enemy.getName());
 end
 
 rule "Apply Medium-Hard Difficulty"
+    agenda-group "difficulty-adjustment"
     salience 90
+    no-loop true
     when
         $context : GameContext(difficulty == "medium-hard")
-        $enemy : Enemy()
+        $enemy : Enemy($hp : hp, $dmg : damage, $def : defense) from enemyCandidates
     then
-        $enemy.applyDifficultyModifier(1.5, 1.5);
+        modify($enemy) {
+            setHp($hp * 1.5),
+            setDamage($dmg * 1.5),
+            setDefense($def * 1.3),
+        }
         System.out.println("Applied medium-hard difficulty to " + $enemy.getName());
 end
 
 rule "Apply Hard Difficulty"
+    agenda-group "difficulty-adjustment"
     salience 90
+    no-loop true
     when
         $context : GameContext(difficulty == "hard")
-        $enemy : Enemy()
+        $enemy : Enemy($hp : hp, $dmg : damage, $def : defense) from enemyCandidates
     then
-        $enemy.applyDifficultyModifier(2.5, 2.0);
+        modify($enemy) {
+            setHp($hp * 2.5),
+            setDamage($dmg * 2.0),
+            setDefense($def * 1.8),
+        }
         System.out.println("Applied hard difficulty to " + $enemy.getName());
 end
