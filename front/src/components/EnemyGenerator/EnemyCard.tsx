@@ -44,8 +44,8 @@ const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, loading = false }) => {
             <Card className="w-full h-full souls-border bg-gradient-to-br from-zinc-900 via-black to-zinc-900 flex items-center justify-center min-h-[500px]">
                 <div className="text-center p-8">
                     <Skull className="w-16 h-16 mx-auto text-zinc-600 mb-4" />
-                    <p className="text-zinc-400 text-lg">Neprijatelj još nije generisan</p>
-                    <p className="text-zinc-500 text-sm mt-2">Konfiguriši kontekst i klikni na "Generiši"</p>
+                    <p className="text-zinc-400 text-lg">Enemy is still not generated</p>
+                    <p className="text-zinc-500 text-sm mt-2">Configure context and click "Generate"</p>
                 </div>
             </Card>
         );
@@ -145,7 +145,7 @@ const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, loading = false }) => {
                     <div>
                         <h4 className="text-sm font-semibold text-zinc-400 mb-2 flex items-center gap-2">
                             <Zap className="w-4 h-4 text-yellow-500" />
-                            Sposobnosti
+                            Abilities
                         </h4>
                         <div className="flex flex-wrap gap-2">
                             {enemy.abilities.map((ability) => (
@@ -166,7 +166,7 @@ const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, loading = false }) => {
                     <div>
                         <h4 className="text-sm font-semibold text-zinc-400 mb-2 flex items-center gap-2">
                             <Activity className="w-4 h-4 text-purple-500" />
-                            Status Efekti
+                            Status effect
                         </h4>
                         <div className="flex flex-wrap gap-2">
                             {enemy.statusEffects.map((effect) => (
@@ -187,7 +187,7 @@ const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, loading = false }) => {
                     <div>
                         <h4 className="text-sm font-semibold text-zinc-400 mb-2 flex items-center gap-2">
                             <Shield className="w-4 h-4 text-blue-500" />
-                            Otpornosti
+                            Resistances:
                         </h4>
                         <div className="flex flex-wrap gap-2">
                             {enemy.resistances.map((resistance) => (

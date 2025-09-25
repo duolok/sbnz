@@ -2,13 +2,24 @@ package rules.enemy;
 
 import com.ftn.sbnz.model.models.*;
 
-rule "Filter enemies by region"
-no-loop true
-salience 100
-when
-    $context: GameContext($region: region)
-    $enemy: Enemy(region == $region) from enemyCandidates
-then
-    enemyCandidates.add($enemy);
-    System.out.println("Added " + $enemy.getName() + " to candidates for region: " + $region);
+rule "Filter by Region - Keep Only Matching"
+    agenda-group "region-filter"
+    salience 100
+    when
+        $context : GameContext($region: region)
+        $enemy : Enemy(region != $region) from enemyCandidates
+    then
+        enemyCandidates.remove($enemy);
+        retract($enemy);
+        System.out.println("Removed " + $enemy.getName() + " - wrong region");
+end
+
+rule "Keep Region Matches"
+    agenda-group "region-filter"
+    salience 90
+    when
+        $context : GameContext($region: region)
+        $enemy : Enemy(region == $region) from enemyCandidates
+    then
+        System.out.println("Keeping " + $enemy.getName() + " - region match");
 end

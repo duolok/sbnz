@@ -31,7 +31,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [generatedEnemy, setGeneratedEnemy] = useState<Enemy | null>(null);
   const [targetEnemyName, setTargetEnemyName] = useState('Iron Lord');
-  const [useMockData, setUseMockData] = useState(false); // Za development bez backend-a
+  const [useMockData, setUseMockData] = useState(false);
 
   const [gameContext, setGameContext] = useState<GameContext>({
     region: 'swamp',
@@ -94,7 +94,7 @@ export default function HomePage() {
 
   const testPresets = [
     {
-      name: 'Močvara - Noć',
+      name: 'Swamp - Night',
       icon: '🌿',
       context: {
         region: 'swamp',
@@ -110,7 +110,7 @@ export default function HomePage() {
       }
     },
     {
-      name: 'Zamak - Boss Fight',
+      name: 'Castle - Boss',
       icon: '🏰',
       context: {
         region: 'castle',
@@ -126,7 +126,7 @@ export default function HomePage() {
       }
     },
     {
-      name: 'Planina - Vetar',
+      name: 'Mountain - Wind',
       icon: '⛰️',
       context: {
         region: 'mountain',
@@ -163,7 +163,6 @@ export default function HomePage() {
             Soulslike Enemy Generator
           </h1>
           <p className="text-lg md:text-xl text-zinc-400">
-            Sistem za pametno generisanje protivnika baziran na znanju
           </p>
         </div>
 
@@ -206,17 +205,16 @@ export default function HomePage() {
                 <Button
                   onClick={handleForwardGeneration}
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-3 text-lg"
+                  className="w-full bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-3 text-lg"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Generisanje u toku...
+                      Generation in progress
                     </>
                   ) : (
                     <>
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      Generiši Neprijatelja (Forward)
+                      Generate Enemy (Forward)
                     </>
                   )}
                 </Button>
@@ -225,14 +223,14 @@ export default function HomePage() {
               <TabsContent value="backward" className="space-y-6">
                 <Card className="souls-border bg-gradient-to-br from-zinc-900 to-black">
                   <CardHeader>
-                    <CardTitle className="text-xl text-orange-400">Ciljani Neprijatelj</CardTitle>
+                    <CardTitle className="text-xl text-orange-400">Wanted Enemy</CardTitle>
                     <CardDescription className="text-zinc-400">
-                      Unesite ime specifičnog neprijatelja kojeg želite da genišete
+                      Enter the name of an enemy you wish to search
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-zinc-300">Ime neprijatelja</Label>
+                      <Label className="text-zinc-300">Enemy name</Label>
                       <Input
                         type="text"
                         value={targetEnemyName}
@@ -270,12 +268,11 @@ export default function HomePage() {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Traženje neprijatelja...
+                      Searching for enemy...
                     </>
                   ) : (
                     <>
-                      <Target className="mr-2 h-5 w-5" />
-                      Pronađi Neprijatelja (Backward)
+                      Find Enemy (Backward)
                     </>
                   )}
                 </Button>
@@ -286,8 +283,7 @@ export default function HomePage() {
             <Card className="souls-border bg-gradient-to-br from-zinc-900 to-black">
               <CardHeader>
                 <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
-                  <Gamepad2 className="w-5 h-5" />
-                  Brzi Test Preseti
+                  Fast Test Presets
                 </CardTitle>
               </CardHeader>
               <CardContent>

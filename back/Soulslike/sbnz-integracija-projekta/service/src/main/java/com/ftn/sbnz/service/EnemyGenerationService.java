@@ -3,7 +3,6 @@ package com.ftn.sbnz.service;
 import com.ftn.sbnz.model.models.BackwardQuery;
 import com.ftn.sbnz.model.models.Enemy;
 import com.ftn.sbnz.model.models.GameContext;
-import com.ftn.sbnz.model.models.Player;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.slf4j.Logger;
@@ -35,29 +34,20 @@ public class EnemyGenerationService {
         List<Enemy> enemyCandidates = new ArrayList<>();
         
         try {
-            // Create KieSession
             kieSession = kieContainer.newKieSession("forwardChainingSession");
             
-            // Set globals - ONLY use the ones declared in your DRL files
             kieSession.setGlobal("enemyCandidates", enemyCandidates);
-            
-            // Initialize selectedEnemy as null - this global is declared in your DRL files
             Enemy selectedEnemy = null;
             kieSession.setGlobal("selectedEnemy", selectedEnemy);
             
-            // Insert facts
             kieSession.insert(context);
             if (context.getPlayer() != null) {
                 kieSession.insert(context.getPlayer());
             }
             
-            // Load existing enemies from database
-            loadExistingEnemies(kieSession, context.getRegion(), enemyCandidates);
-            
-            // Execute rules in phases
+            loadExistingEnemiesAsCopies(kieSession, context.getRegion(), enemyCandidates);
             executeRulesInPhases(kieSession);
-            
-            // Get result from the global that your rules actually use
+
             selectedEnemy = (Enemy) kieSession.getGlobal("selectedEnemy");
             
             return handleResult(selectedEnemy, enemyCandidates, context);
@@ -72,23 +62,42 @@ public class EnemyGenerationService {
         }
     }
 
-    private void loadExistingEnemies(KieSession kieSession, String region, List<Enemy> enemyCandidates) {
+    private void loadExistingEnemiesAsCopies(KieSession kieSession, String region, List<Enemy> enemyCandidates) {
         try {
             List<Enemy> existingEnemies = enemyRepository.findByRegion(region);
             log.info("Loaded {} existing enemies for region: {}", existingEnemies.size(), region);
             
-            for (Enemy enemy : existingEnemies) {
-                kieSession.insert(enemy);
-                enemyCandidates.add(enemy);
+            for (Enemy originalEnemy : existingEnemies) {
+                Enemy enemyCopy = createEnemyCopy(originalEnemy);
+                kieSession.insert(enemyCopy);
+                enemyCandidates.add(enemyCopy);
+                log.info("Added existing enemy to session: {}", enemyCopy.getName());
             }
         } catch (Exception e) {
-            log.warn("Could not load enemies from database", e);
+            log.warn("Could not load enemies from database, relying on templates", e);
         }
+    }
+
+    private Enemy createEnemyCopy(Enemy original) {
+        Enemy copy = new Enemy(original.getName(), original.getType());
+        copy.setRegion(original.getRegion());
+        copy.setHp(original.getHp());
+        copy.setDamage(original.getDamage());
+        copy.setDefense(original.getDefense());
+        copy.setBehaviour(original.getBehaviour());
+        copy.setScore(original.getScore());
+        
+        copy.getAbilities().addAll(original.getAbilities());
+        copy.getResistances().addAll(original.getResistances());
+        copy.getStatusEffects().addAll(original.getStatusEffects());
+        copy.getWeaknesses().addAll(original.getWeaknesses());
+        
+        return copy;
     }
 
     private void executeRulesInPhases(KieSession kieSession) {
         String[] phases = {
-            "template-generation",
+            "template-generation",    
             "difficulty-adjustment", 
             "player-level-adjustment",
             "player-build-counter",
@@ -99,38 +108,49 @@ public class EnemyGenerationService {
         
         for (String phase : phases) {
             try {
+                log.info("=== Starting phase: {} ===", phase);
                 kieSession.getAgenda().getAgendaGroup(phase).setFocus();
                 int fired = kieSession.fireAllRules();
                 log.info("Phase {}: {} rules fired", phase, fired);
+                
+                // Debug: log current candidate count
+                List<Enemy> candidates = (List<Enemy>) kieSession.getGlobal("enemyCandidates");
+                log.info("After phase {}: {} total candidates", phase, candidates.size());
+                
+                // Log candidate names for debugging
+                for (Enemy candidate : candidates) {
+                    log.debug("Candidate: {} (Score: {})", candidate.getName(), candidate.getScore());
+                }
+                
             } catch (Exception e) {
-                log.warn("Error in phase {}: {}", phase, e.getMessage());
+                log.error("Error in phase {}: {}", phase, e.getMessage(), e);
             }
         }
     }
 
     private Enemy handleResult(Enemy selectedEnemy, List<Enemy> enemyCandidates, GameContext context) {
+        log.info("=== FINAL SELECTION ===");
+        log.info("Total candidates: {}", enemyCandidates.size());
+        log.info("Selected enemy from rules: {}", selectedEnemy != null ? selectedEnemy.getName() : "null");
+        
         if (selectedEnemy != null) {
-            log.info("Selected enemy: {}", selectedEnemy.getName());
-            return saveEnemy(selectedEnemy);
+            log.info("Selected enemy via rules: {} (Score: {})", selectedEnemy.getName(), selectedEnemy.getScore());
+            return selectedEnemy;
         } else if (!enemyCandidates.isEmpty()) {
+            // Find enemy with highest score
             Enemy bestCandidate = enemyCandidates.stream()
                 .max((e1, e2) -> Double.compare(e1.getScore(), e2.getScore()))
                 .orElse(null);
-            log.info("Selected best candidate: {}", bestCandidate != null ? bestCandidate.getName() : "null");
-            return bestCandidate != null ? saveEnemy(bestCandidate) : createFallbackEnemy(context);
-        } else {
-            log.warn("No enemies generated, creating fallback");
-            return createFallbackEnemy(context);
+                
+            if (bestCandidate != null) {
+                log.info("Selected best candidate by score: {} (Score: {})", 
+                    bestCandidate.getName(), bestCandidate.getScore());
+                return bestCandidate;
+            }
         }
-    }
-
-    private Enemy saveEnemy(Enemy enemy) {
-        try {
-            return enemyRepository.save(enemy);
-        } catch (Exception e) {
-            log.warn("Could not save enemy to database", e);
-            return enemy;
-        }
+        
+        log.warn("No enemies generated, creating fallback");
+        return createFallbackEnemy(context);
     }
 
     private Enemy createFallbackEnemy(GameContext context) {
@@ -141,7 +161,6 @@ public class EnemyGenerationService {
         fallback.setDefense(50);
         fallback.setScore(50);
         
-        // Apply basic scaling
         switch (context.getDifficulty()) {
             case "easy":
                 fallback.setHp(700);
@@ -156,7 +175,7 @@ public class EnemyGenerationService {
         return fallback;
     }
 
-    // Backward chaining method
+    // Backward chaining method remains the same
     public Enemy findSpecificEnemy(BackwardQuery query) {
         KieSession kieSession = null;
         try {
@@ -164,7 +183,6 @@ public class EnemyGenerationService {
             List<Enemy> enemyCandidates = new ArrayList<>();
             
             kieSession.setGlobal("enemyCandidates", enemyCandidates);
-            kieSession.setGlobal("log", log);
             
             kieSession.insert(query);
             if (query.getContext() != null) {
@@ -174,9 +192,7 @@ public class EnemyGenerationService {
                 }
             }
             
-            // Load all enemies for backward chaining
-            loadAllEnemiesForBackward(kieSession, enemyCandidates);
-            
+            loadAllEnemiesForBackwardAsCopies(kieSession, enemyCandidates);
             kieSession.fireAllRules();
             
             return handleBackwardResult(query, enemyCandidates);
@@ -192,12 +208,13 @@ public class EnemyGenerationService {
         }
     }
 
-    private void loadAllEnemiesForBackward(KieSession kieSession, List<Enemy> enemyCandidates) {
+    private void loadAllEnemiesForBackwardAsCopies(KieSession kieSession, List<Enemy> enemyCandidates) {
         try {
             List<Enemy> allEnemies = enemyRepository.findAll();
-            for (Enemy enemy : allEnemies) {
-                kieSession.insert(enemy);
-                enemyCandidates.add(enemy);
+            for (Enemy originalEnemy : allEnemies) {
+                Enemy enemyCopy = createEnemyCopy(originalEnemy);
+                kieSession.insert(enemyCopy);
+                enemyCandidates.add(enemyCopy);
             }
         } catch (Exception e) {
             log.warn("Could not load enemies for backward chaining", e);
@@ -206,9 +223,9 @@ public class EnemyGenerationService {
 
     private Enemy handleBackwardResult(BackwardQuery query, List<Enemy> enemyCandidates) {
         if (query.isConditionsMet() && query.getTargetEnemy() != null) {
-            return findEnemyByName(query.getTargetEnemy(), query.getContext());
+            return findEnemyByNameInCandidates(query.getTargetEnemy(), enemyCandidates);
         } else if (query.getFallbackEnemy() != null) {
-            return findEnemyByName(query.getFallbackEnemy(), query.getContext());
+            return findEnemyByNameInCandidates(query.getFallbackEnemy(), enemyCandidates);
         } else if (!enemyCandidates.isEmpty()) {
             return enemyCandidates.get(0);
         } else {
@@ -216,15 +233,10 @@ public class EnemyGenerationService {
         }
     }
 
-    private Enemy findEnemyByName(String name, GameContext context) {
-        try {
-            List<Enemy> enemies = enemyRepository.findByName(name);
-            if (!enemies.isEmpty()) {
-                return enemies.get(0);
-            }
-        } catch (Exception e) {
-            log.warn("Could not find enemy by name: {}", name, e);
-        }
-        return createFallbackEnemy(context);
+    private Enemy findEnemyByNameInCandidates(String name, List<Enemy> enemyCandidates) {
+        return enemyCandidates.stream()
+            .filter(enemy -> enemy.getName().equals(name))
+            .findFirst()
+            .orElse(createFallbackEnemy(new GameContext("castle", "medium", "clear", "day", null)));
     }
 }

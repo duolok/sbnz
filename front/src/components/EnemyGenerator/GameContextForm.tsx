@@ -51,10 +51,10 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
         <Card className="w-full souls-border bg-gradient-to-br from-zinc-900 to-black">
             <CardHeader className="pb-4">
                 <CardTitle className="text-2xl souls-glow text-orange-400">
-                    Konfiguriši Kontekst Igre
+                    Configure Game Context
                 </CardTitle>
                 <CardDescription className="text-zinc-400">
-                    Podesi parametre sveta i igrača za generisanje neprijatelja
+                    Tweak world and player parameters to generate enemy
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -77,7 +77,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                                     <SelectItem key={region.value} value={region.value}>
                                         <span className="flex items-center gap-2">
                                             <span>{region.icon}</span>
-                                            <span>{region.label}</span>
+                                            <span class="text-white">{region.label}</span>
                                         </span>
                                     </SelectItem>
                                 ))}
@@ -88,7 +88,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-zinc-300">
                             <Shield className="w-4 h-4 text-orange-400" />
-                            Težina
+                            Difficulty
                         </Label>
                         <Select
                             value={context.difficulty}
@@ -113,7 +113,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-zinc-300">
                             <Cloud className="w-4 h-4 text-orange-400" />
-                            Vremenski uslovi
+                            Weather
                         </Label>
                         <Select
                             value={context.weather}
@@ -127,7 +127,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                                     <SelectItem key={weather.value} value={weather.value}>
                                         <span className="flex items-center gap-2">
                                             <span>{weather.icon}</span>
-                                            <span>{weather.label}</span>
+                                            <span class="text-white">{weather.label}</span>
                                         </span>
                                     </SelectItem>
                                 ))}
@@ -138,7 +138,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-zinc-300">
                             <Clock className="w-4 h-4 text-orange-400" />
-                            Doba dana
+                            Time of day
                         </Label>
                         <Select
                             value={context.timeOfDay}
@@ -152,7 +152,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                                     <SelectItem key={time.value} value={time.value}>
                                         <span className="flex items-center gap-2">
                                             <span>{time.icon}</span>
-                                            <span>{time.label}</span>
+                                            <span class="text-white">{time.label}</span>
                                         </span>
                                     </SelectItem>
                                 ))}
@@ -165,11 +165,11 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                 <div className="space-y-4 p-4 bg-zinc-900 rounded-lg border border-zinc-800">
                     <h3 className="text-lg font-semibold text-orange-400 flex items-center gap-2">
                         <User className="w-5 h-5" />
-                        Podešavanja Igrača
+                        Player Configuration
                     </h3>
 
                     <div className="space-y-2">
-                        <Label className="text-zinc-300">Ime igrača</Label>
+                        <Label className="text-zinc-300">Player name</Label>
                         <Input
                             type="text"
                             value={context.player.name}
@@ -181,7 +181,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
 
                     <div className="space-y-2">
                         <Label className="text-zinc-300">
-                            Nivo igrača: <span className="text-orange-400 font-bold">{context.player.level}</span>
+                            Player level: <span className="text-orange-400 font-bold">{context.player.level}</span>
                         </Label>
                         <Slider
                             value={[context.player.level]}
@@ -201,7 +201,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-zinc-300">Klasa igrača</Label>
+                        <Label className="text-zinc-300">Player class</Label>
                         <RadioGroup
                             value={context.player.playerClass}
                             onValueChange={(value) => handleChange('player.playerClass', value)}
@@ -224,7 +224,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-zinc-300">
                             <Sword className="w-4 h-4 text-orange-400" />
-                            Tip oružja
+                            Weapon Type
                         </Label>
                         <Select
                             value={context.player.weaponType}
@@ -236,7 +236,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                             <SelectContent className="bg-zinc-800 border-zinc-700">
                                 {WEAPON_TYPES[context.player.playerClass]?.map((weapon) => (
                                     <SelectItem key={weapon} value={weapon}>
-                                        <span className="capitalize">{weapon}</span>
+                                        <span className="capitalize text-white">{weapon}</span>
                                     </SelectItem>
                                 ))}
                             </SelectContent>

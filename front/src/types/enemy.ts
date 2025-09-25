@@ -34,43 +34,44 @@ export interface BackwardQuery {
 }
 
 export const REGIONS = [
-    { value: 'swamp', label: 'Močvara', icon: '🌿' },
-    { value: 'castle', label: 'Zamak', icon: '🏰' },
-    { value: 'mountain', label: 'Planina', icon: '⛰️' },
-    { value: 'volcano', label: 'Vulkan', icon: '🌋' },
-    { value: 'desert', label: 'Pustinja', icon: '🏜️' },
+    { value: 'swamp', label: 'Swamp', icon: '🌿' },
+    { value: 'castle', label: 'Castle', icon: '🏰' },
+    { value: 'mountain', label: 'Mountain', icon: '⛰️' },
+    { value: 'volcano', label: 'Volcano', icon: '🌋' },
+    { value: 'desert', label: 'Desert', icon: '🏜️' },
 ] as const;
 
 export const DIFFICULTIES = [
-    { value: 'easy', label: 'Lako', color: 'text-green-400' },
-    { value: 'medium', label: 'Srednje', color: 'text-yellow-400' },
-    { value: 'medium-hard', label: 'Srednje-teško', color: 'text-orange-400' },
-    { value: 'hard', label: 'Teško', color: 'text-red-400' },
+    { value: 'easy', label: 'Easy', color: 'text-green-400' },
+    { value: 'medium', label: 'Medium', color: 'text-yellow-400' },
+    { value: 'medium-hard', label: 'Medium-Hard', color: 'text-orange-400' },
+    { value: 'hard', label: 'Hard', color: 'text-red-400' },
 ] as const;
 
 export const WEATHER_CONDITIONS = [
-    { value: 'clear', label: 'Vedro', icon: '☀️' },
-    { value: 'rain', label: 'Kiša', icon: '🌧️' },
-    { value: 'fog', label: 'Magla', icon: '🌫️' },
-    { value: 'wind', label: 'Vetar', icon: '💨' },
-    { value: 'snow', label: 'Sneg', icon: '❄️' },
+    { value: 'clear', label: 'Clear', icon: '☀️' },
+    { value: 'rain', label: 'Rain', icon: '🌧️' },
+    { value: 'fog', label: 'Fog', icon: '🌫️' },
+    { value: 'wind', label: 'Wind', icon: '💨' },
+    { value: 'snow', label: 'Snow', icon: '❄️' },
 ] as const;
 
 export const TIME_OF_DAY = [
-    { value: 'day', label: 'Dan', icon: '🌞' },
-    { value: 'night', label: 'Noć', icon: '🌙' },
-    { value: 'dawn', label: 'Zora', icon: '🌅' },
-    { value: 'dusk', label: 'Sumrak', icon: '🌆' },
+    { value: 'day', label: 'Day', icon: '🌞' },
+    { value: 'night', label: 'Night', icon: '🌙' },
+    { value: 'dawn', label: 'Dawn', icon: '🌅' },
+    { value: 'dusk', label: 'Dusk', icon: '🌆' },
 ] as const;
 
 export const PLAYER_CLASSES = [
-    { value: 'DEX', label: 'Dexterity Build', icon: '🗡️', description: 'Brz i agilan, koristi katane i lukove' },
-    { value: 'STRENGTH', label: 'Strength Build', icon: '⚔️', description: 'Snažan i izdržljiv, koristi teško oružje' },
-    { value: 'MAGE', label: 'Mage Build', icon: '🔮', description: 'Magični napadač, koristi čarolije' },
+    { value: 'STRENGTH', label: 'Strength Build', icon: '⚔️', description: 'Strong and durable, uses heavy weapons' },
+    { value: 'DEX', label: 'Dexterity Build', icon: '🗡️', description: 'Fast and agile, uses katanas and bows' },
+    { value: 'MAGE', label: 'Mage Build', icon: '🔮', description: 'Magical attacker, uses spells' },
 ] as const;
 
 export const WEAPON_TYPES = {
-    DEX: ['katana', 'bow', 'daggers', 'rapier'],
     STRENGTH: ['greatsword', 'hammer', 'axe', 'mace'],
+    DEX: ['katana', 'bow', 'daggers', 'rapier'],
     MAGE: ['staff', 'wand', 'catalyst', 'talisman'],
 } as const;
+
