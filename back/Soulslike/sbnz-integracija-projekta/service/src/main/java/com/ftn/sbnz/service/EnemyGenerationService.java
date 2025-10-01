@@ -2,16 +2,31 @@ package com.ftn.sbnz.service;
 
 import com.ftn.sbnz.model.models.BackwardQuery;
 import com.ftn.sbnz.model.models.Enemy;
+import com.ftn.sbnz.model.models.SelectionResult;
 import com.ftn.sbnz.model.models.GameContext;
+import com.ftn.sbnz.service.EnemyRepository;
+
+import org.drools.decisiontable.ExternalSpreadsheetCompiler;
+import org.kie.api.io.ResourceType;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
+import org.kie.internal.utils.KieHelper;
+import org.kie.api.builder.Results;
+import org.kie.api.builder.Message;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class EnemyGenerationService {
@@ -26,7 +41,7 @@ public class EnemyGenerationService {
     public EnemyGenerationService(KieContainer kieContainer) {
         this.kieContainer = kieContainer;
     }
-    
+
     public Enemy generateEnemy(GameContext context) {
         log.info("Starting FORWARD CHAINING enemy generation for context: {}", context);
         
@@ -34,11 +49,22 @@ public class EnemyGenerationService {
         List<Enemy> enemyCandidates = new ArrayList<>();
         
         try {
-            kieSession = kieContainer.newKieSession("forwardChainingSession");
+            InputStream template = getClass().getResourceAsStream("/templates/difficulty-adjustment.drt");
+            InputStream data = getClass().getResourceAsStream("/templates/template-data.xls");
+            
+            if (template != null && data != null) {
+                ExternalSpreadsheetCompiler converter = new ExternalSpreadsheetCompiler();
+                String generatedDRL = converter.compile(data, template, 3, 2);
+                log.info("=== GENERATED DRL FROM TEMPLATE ===\n{}\n=== END ===", generatedDRL);
+                
+                // Create session with generated DRL + all existing rules
+                kieSession = createKieSessionFromDRL(generatedDRL);
+            } else {
+                log.warn("Template or data file not found, using base session");
+                kieSession = kieContainer.newKieSession("forwardChainingSession");
+            }
             
             kieSession.setGlobal("enemyCandidates", enemyCandidates);
-            Enemy selectedEnemy = null;
-            kieSession.setGlobal("selectedEnemy", selectedEnemy);
             
             kieSession.insert(context);
             if (context.getPlayer() != null) {
@@ -47,8 +73,8 @@ public class EnemyGenerationService {
             
             loadExistingEnemiesAsCopies(kieSession, context.getRegion(), enemyCandidates);
             executeRulesInPhases(kieSession);
-
-            selectedEnemy = (Enemy) kieSession.getGlobal("selectedEnemy");
+            
+            Enemy selectedEnemy = getSelectedEnemyFromSession(kieSession);
             
             return handleResult(selectedEnemy, enemyCandidates, context);
             
@@ -60,6 +86,56 @@ public class EnemyGenerationService {
                 kieSession.dispose();
             }
         }
+    }
+    
+    private KieSession createKieSessionFromDRL(String generatedDRL) {
+        KieHelper kieHelper = new KieHelper();
+        
+        // Add the generated difficulty rules
+        kieHelper.addContent(generatedDRL, ResourceType.DRL);
+        
+        // Load all existing rule files via InputStreams
+        String[] ruleFiles = {
+            "/rules/enemy/region.drl",
+            "/rules/enemy/player-level.drl",
+            "/rules/enemy/build.drl",
+            "/rules/enemy/weather.drl",
+            "/rules/enemy/daytime.drl",
+            "/rules/enemy/final.drl"
+        };
+        
+        for (String ruleFile : ruleFiles) {
+            try {
+                InputStream ruleStream = getClass().getResourceAsStream(ruleFile);
+                if (ruleStream != null) {
+                    String ruleContent = readInputStream(ruleStream);
+                    kieHelper.addContent(ruleContent, ResourceType.DRL);
+                    log.info("Loaded rule file: {}", ruleFile);
+                } else {
+                    log.warn("Rule file not found: {}", ruleFile);
+                }
+            } catch (Exception e) {
+                log.error("Error loading rule file {}: {}", ruleFile, e.getMessage());
+            }
+        }
+        
+        Results results = kieHelper.verify();
+        if (results.hasMessages(Message.Level.WARNING, Message.Level.ERROR)) {
+            List<Message> messages = results.getMessages(Message.Level.WARNING, Message.Level.ERROR);
+            for (Message message : messages) {
+                log.error("DRL Compilation Error: {}", message.getText());
+            }
+            throw new IllegalStateException("DRL compilation errors found. Check logs.");
+        }
+        
+        log.info("Successfully compiled all DRL rules");
+        return kieHelper.build().newKieSession();
+    }
+    
+    private String readInputStream(InputStream inputStream) {
+        return new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+            .lines()
+            .collect(Collectors.joining("\n"));
     }
 
     private void loadExistingEnemiesAsCopies(KieSession kieSession, String region, List<Enemy> enemyCandidates) {
@@ -74,7 +150,7 @@ public class EnemyGenerationService {
                 log.info("Added existing enemy to session: {}", enemyCopy.getName());
             }
         } catch (Exception e) {
-            log.warn("Could not load enemies from database, relying on templates", e);
+            log.warn("Could not load enemies from database", e);
         }
     }
 
@@ -95,10 +171,29 @@ public class EnemyGenerationService {
         return copy;
     }
 
+    private Enemy getSelectedEnemyFromSession(KieSession kieSession) {
+        try {
+            Collection<?> results = kieSession.getObjects(new org.kie.api.runtime.ObjectFilter() {
+                @Override
+                public boolean accept(Object object) {
+                    return object instanceof SelectionResult;
+                }
+            });
+            
+            if (!results.isEmpty()) {
+                SelectionResult result = (SelectionResult) results.iterator().next();
+                return result.getSelectedEnemy();
+            }
+        } catch (Exception e) {
+            log.error("Error retrieving SelectionResult", e);
+        }
+        return null;
+    }
+
     private void executeRulesInPhases(KieSession kieSession) {
         String[] phases = {
-            "template-generation",    
-            "difficulty-adjustment", 
+            "region-filter",
+            "difficulty-adjustment",
             "player-level-adjustment",
             "player-build-counter",
             "weather-effects",
@@ -111,17 +206,16 @@ public class EnemyGenerationService {
                 log.info("=== Starting phase: {} ===", phase);
                 kieSession.getAgenda().getAgendaGroup(phase).setFocus();
                 int fired = kieSession.fireAllRules();
-                log.info("Phase {}: {} rules fired", phase, fired);
+                log.info("PHASE {}: {} rules fired", phase, fired);
                 
-                // Debug: log current candidate count
                 List<Enemy> candidates = (List<Enemy>) kieSession.getGlobal("enemyCandidates");
-                log.info("After phase {}: {} total candidates", phase, candidates.size());
+                log.info("AFTER {}: {} total candidates", phase, candidates.size());
                 
-                // Log candidate names for debugging
                 for (Enemy candidate : candidates) {
-                    log.debug("Candidate: {} (Score: {})", candidate.getName(), candidate.getScore());
+                    log.debug("ENEMY: {} (Score: {}) HP: {} DMG: {}", 
+                        candidate.getName(), candidate.getScore(), 
+                        candidate.getHp(), candidate.getDamage());
                 }
-                
             } catch (Exception e) {
                 log.error("Error in phase {}: {}", phase, e.getMessage(), e);
             }
@@ -137,7 +231,6 @@ public class EnemyGenerationService {
             log.info("Selected enemy via rules: {} (Score: {})", selectedEnemy.getName(), selectedEnemy.getScore());
             return selectedEnemy;
         } else if (!enemyCandidates.isEmpty()) {
-            // Find enemy with highest score
             Enemy bestCandidate = enemyCandidates.stream()
                 .max((e1, e2) -> Double.compare(e1.getScore(), e2.getScore()))
                 .orElse(null);
@@ -175,7 +268,6 @@ public class EnemyGenerationService {
         return fallback;
     }
 
-    // Backward chaining method remains the same
     public Enemy findSpecificEnemy(BackwardQuery query) {
         KieSession kieSession = null;
         try {

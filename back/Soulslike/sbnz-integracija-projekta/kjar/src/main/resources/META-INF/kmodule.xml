@@ -1,15 +1,11 @@
 <kmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
          xmlns="http://jboss.org/kie/6.0.0/kmodule">
     
-    <kbase name="forwardChainingKbase" packages="rules.enemy,rules.backward,templates">
+    <kbase name="forwardChainingKbase" packages="rules.enemy">
         <ksession name="forwardChainingSession"/>
     </kbase>
     
     <kbase name="backwardChainingKbase" packages="rules.backward">
         <ksession name="backwardChainingSession"/>
-    </kbase>
-    
-    <kbase name="templatesKbase" packages="templates">
-        <ksession name="templatesSession"/>
     </kbase>
 </kmodule>

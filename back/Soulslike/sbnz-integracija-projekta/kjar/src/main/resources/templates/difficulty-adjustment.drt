@@ -1,7 +1,8 @@
 template header
-enemyName
-region
-requiredDifficulty
+difficulty
+hpMultiplier
+dmgMultiplier
+defMultiplier
 
 package templates;
 
@@ -10,34 +11,22 @@ import com.ftn.sbnz.model.models.GameContext;
 
 global java.util.List enemyCandidates;
 
-template "difficulty-adjustment-rules"
+template "difficulty-adjustment"
 
-rule "Apply @{requiredDifficulty} Difficulty for @{enemyName} in @{region}"
+rule "Apply @{difficulty} Difficulty"
     agenda-group "difficulty-adjustment"
     salience 90
+    no-loop true
     when
-        $context : GameContext(region == "@{region}", difficulty == "@{requiredDifficulty}")
-        $enemy : Enemy(name == "@{enemyName}")
+        $context : GameContext(difficulty == "@{difficulty}")
+        $enemy : Enemy($hp : hp, $dmg : damage, $def : defense) from enemyCandidates
     then
-        double hpMultiplier = 1.0;
-        double dmgMultiplier = 1.0;
-        
-        if ("@{requiredDifficulty}".equals("easy")) {
-            hpMultiplier = 0.6;
-            dmgMultiplier = 0.6;
-        } else if ("@{requiredDifficulty}".equals("medium-hard")) {
-            hpMultiplier = 1.5;
-            dmgMultiplier = 1.5;
-        } else if ("@{requiredDifficulty}".equals("hard")) {
-            hpMultiplier = 2.5;
-            dmgMultiplier = 2.0;
-        }
-        
         modify($enemy) {
-            setHp($enemy.getHp() * hpMultiplier),
-            setDamage($enemy.getDamage() * dmgMultiplier)
+            setHp($hp * @{hpMultiplier}),
+            setDamage($dmg * @{dmgMultiplier}),
+            setDefense($def * @{defMultiplier})
         }
-        System.out.println("Difficulty @{requiredDifficulty} applied to @{enemyName}");
+        System.out.println("Applied @{difficulty} difficulty to " + $enemy.getName());
 end
 
 end template

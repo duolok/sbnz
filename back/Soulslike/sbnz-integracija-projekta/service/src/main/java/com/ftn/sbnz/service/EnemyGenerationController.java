@@ -4,10 +4,13 @@ import com.ftn.sbnz.model.models.BackwardQuery;
 import com.ftn.sbnz.model.models.Enemy;
 import com.ftn.sbnz.model.models.GameContext;
 import com.ftn.sbnz.model.models.Player;
+
+import org.kie.api.runtime.KieSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/enemy")
@@ -51,6 +54,7 @@ public class EnemyGenerationController {
         BackwardQuery query = new BackwardQuery("AUTO_COUNTER", testContext);
         return enemyService.findSpecificEnemy(query);
     }
+
     
     @GetMapping("/test/custom")
     public Enemy testCustomEnemy(

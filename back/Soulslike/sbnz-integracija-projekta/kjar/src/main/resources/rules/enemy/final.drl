@@ -3,107 +3,65 @@ package rules.enemy;
 import com.ftn.sbnz.model.models.*;
 
 global java.util.List enemyCandidates;
-global com.ftn.sbnz.model.models.Enemy selectedEnemy;
 
-rule "Select Best Enemy by Contextual Score"
-    agenda-group "final-selection"
-    salience 100
-    when
-        $context : GameContext()
-        accumulate(
-            Enemy($score : score) from enemyCandidates,
-            $maxScore : max($score)
-        )
-        $bestEnemy : Enemy(score == $maxScore) from enemyCandidates
-        eval($maxScore != null && $maxScore.doubleValue() > 0.0)
-    then
-        selectedEnemy = $bestEnemy;
-        System.out.println("Phase 7 - Contextually Selected: " + $bestEnemy.getName() + 
-                          " (Score: " + $maxScore + ", Type: " + $bestEnemy.getType() + ")");
-end
-
-rule "Fallback to Most Appropriate Non-Boss"
-    agenda-group "final-selection"
-    salience 50
-    when
-        $context : GameContext()
-        not(Enemy(score > 0.0) from enemyCandidates) // No enemies with positive score
-        $nonBoss : Enemy(type != "boss") from enemyCandidates
-    then
-        selectedEnemy = $nonBoss;
-        System.out.println("Phase 7 - Fallback to non-boss: " + $nonBoss.getName());
-end
-
-rule "Emergency Fallback - First Available"
-    agenda-group "final-selection"
-    salience 10
-    when
-        $context : GameContext()
-        eval(selectedEnemy == null)
-        exists(Enemy() from enemyCandidates)
-    then
-        Enemy firstEnemy = (Enemy)enemyCandidates.get(0);
-        selectedEnemy = firstEnemy;
-        System.out.println("Phase 7 - Emergency fallback: " + firstEnemy.getName());
-end
-
+// FIRST: Score adjustment rules (run before selection)
 rule "Penalize Boss for Low Level Player"
     agenda-group "final-selection"
-    salience 90
+    salience 100
     when
         $context : GameContext($player : player)
         $enemy : Enemy(type == "boss", $score : score) from enemyCandidates
         Player(this == $player, level < 30)
     then
         modify($enemy) {
-            setScore($score - 100.0) 
+            setScore($score - 100.0)
         }
         System.out.println("Penalized boss " + $enemy.getName() + " for low level player. New score: " + ($score - 100));
 end
 
 rule "Penalize Boss for Easy Difficulty"
     agenda-group "final-selection"
-    salience 90
+    salience 100
     when
         $context : GameContext(difficulty == "easy")
         $enemy : Enemy(type == "boss", $score : score) from enemyCandidates
     then
         modify($enemy) {
-            setScore($score - 150.0) 
+            setScore($score - 150.0)
         }
         System.out.println("Penalized boss " + $enemy.getName() + " for easy difficulty. New score: " + ($score - 150));
 end
 
 rule "Penalize Boss for Medium Difficulty"
     agenda-group "final-selection"
-    salience 90
+    salience 100
     when
         $context : GameContext(difficulty == "medium")
         $enemy : Enemy(type == "boss", $score : score) from enemyCandidates
     then
         modify($enemy) {
-            setScore($score - 100.0) 
+            setScore($score - 100.0)
         }
         System.out.println("Penalized boss " + $enemy.getName() + " for medium difficulty. New score: " + ($score - 100));
 end
 
 rule "Reward Boss for Hard Difficulty and High Level"
     agenda-group "final-selection"
-    salience 90
+    salience 100
     when
         $context : GameContext(difficulty == "hard", $player : player)
         $enemy : Enemy(type == "boss", $score : score) from enemyCandidates
         Player(this == $player, level >= 40)
     then
         modify($enemy) {
-            setScore($score + 50.0) 
+            setScore($score + 50.0)
         }
         System.out.println("Rewarded boss " + $enemy.getName() + " for hard difficulty and high level. New score: " + ($score + 50));
 end
 
 rule "Reward Enemy Type Matching Time of Day"
     agenda-group "final-selection"
-    salience 85
+    salience 95
     when
         $context : GameContext(timeOfDay == "night")
         $enemy : Enemy(type == "witch" || type == "goblin" || type == "undead" || type == "demon", $score : score) from enemyCandidates
@@ -116,7 +74,7 @@ end
 
 rule "Reward Enemy Type Matching Weather"
     agenda-group "final-selection"
-    salience 85
+    salience 95
     when
         $context : GameContext(weather == "rain")
         $enemy : Enemy(type == "witch" || abilities contains "water", $score : score) from enemyCandidates
@@ -129,7 +87,7 @@ end
 
 rule "Reward Enemy Type Matching Region Theme"
     agenda-group "final-selection"
-    salience 85
+    salience 95
     when
         $context : GameContext(region == "swamp")
         $enemy : Enemy(type == "witch" || type == "creature" || abilities contains "poison", $score : score) from enemyCandidates
@@ -142,7 +100,7 @@ end
 
 rule "Reward Enemy Type Matching Region Theme - Castle"
     agenda-group "final-selection"
-    salience 85
+    salience 95
     when
         $context : GameContext(region == "castle")
         $enemy : Enemy(type == "knight" || type == "mage" || type == "archer", $score : score) from enemyCandidates
@@ -155,7 +113,7 @@ end
 
 rule "Reward Enemy Type Matching Region Theme - Mountain"
     agenda-group "final-selection"
-    salience 85
+    salience 95
     when
         $context : GameContext(region == "mountain")
         $enemy : Enemy(type == "golem" || type == "bird" || abilities contains "flying", $score : score) from enemyCandidates
@@ -168,7 +126,7 @@ end
 
 rule "Reward Counter-Build Enemies"
     agenda-group "final-selection"
-    salience 80
+    salience 90
     when
         $context : GameContext($player : player)
         Player(this == $player, playerClass == Player.PlayerClass.DEX)
@@ -182,7 +140,7 @@ end
 
 rule "Reward Counter-Build Enemies - STRENGTH"
     agenda-group "final-selection"
-    salience 80
+    salience 90
     when
         $context : GameContext($player : player)
         Player(this == $player, playerClass == Player.PlayerClass.STRENGTH)
@@ -196,7 +154,7 @@ end
 
 rule "Reward Counter-Build Enemies - MAGE"
     agenda-group "final-selection"
-    salience 80
+    salience 90
     when
         $context : GameContext($player : player)
         Player(this == $player, playerClass == Player.PlayerClass.MAGE)
@@ -210,28 +168,76 @@ end
 
 rule "Prevent Boss Spam - Penalize Consecutive Bosses"
     agenda-group "final-selection"
-    salience 70
+    salience 85
     when
         $context : GameContext($region : region)
         $enemy : Enemy(type == "boss", $score : score) from enemyCandidates
     then
         modify($enemy) {
-            setScore($score - 40.0) 
+            setScore($score - 40.0)
         }
         System.out.println("Penalized " + $enemy.getName() + " to prevent boss spam");
 end
 
 rule "Reward Balanced Enemy for Player Level"
     agenda-group "final-selection"
-    salience 70
+    salience 85
     when
         $context : GameContext($player : player)
         $enemy : Enemy($score : score, $enemyHp : hp) from enemyCandidates
         Player(this == $player, $playerLevel : level)
-        eval(Math.abs($enemyHp - ($playerLevel * 50)) < 500) 
+        eval(Math.abs($enemyHp - ($playerLevel * 50)) < 500)
     then
         modify($enemy) {
             setScore($score + 25.0)
         }
         System.out.println("Rewarded " + $enemy.getName() + " for balanced challenge level");
+end
+
+// THEN: Selection rules (run after all scoring is done)
+rule "Select Best Enemy by Contextual Score"
+    agenda-group "final-selection"
+    salience 50
+    when
+        $context : GameContext()
+        not SelectionResult()
+        accumulate(
+            Enemy($score : score) from enemyCandidates,
+            $maxScore : max($score)
+        )
+        $bestEnemy : Enemy(score == $maxScore) from enemyCandidates
+        eval($maxScore != null && $maxScore.doubleValue() > 0.0)
+    then
+        SelectionResult result = new SelectionResult($bestEnemy);
+        insert(result);
+        System.out.println("Phase 7 - Contextually Selected: " + $bestEnemy.getName() + 
+                          " (Score: " + $maxScore + ", Type: " + $bestEnemy.getType() + ")");
+end
+
+rule "Fallback to Most Appropriate Non-Boss"
+    agenda-group "final-selection"
+    salience 40
+    when
+        $context : GameContext()
+        not SelectionResult()
+        not(Enemy(score > 0.0) from enemyCandidates)
+        $nonBoss : Enemy(type != "boss") from enemyCandidates
+    then
+        SelectionResult result = new SelectionResult($nonBoss);
+        insert(result);
+        System.out.println("Phase 7 - Fallback to non-boss: " + $nonBoss.getName());
+end
+
+rule "Emergency Fallback - First Available"
+    agenda-group "final-selection"
+    salience 10
+    when
+        $context : GameContext()
+        not SelectionResult()
+        exists(Enemy() from enemyCandidates)
+    then
+        Enemy firstEnemy = (Enemy)enemyCandidates.get(0);
+        SelectionResult result = new SelectionResult(firstEnemy);
+        insert(result);
+        System.out.println("Phase 7 - Emergency fallback: " + firstEnemy.getName());
 end
