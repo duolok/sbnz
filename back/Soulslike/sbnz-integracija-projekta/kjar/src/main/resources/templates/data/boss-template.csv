@@ -1,6 +1,0 @@
-enemyName,enemyType,region,minHp,maxHp,minDamage,maxDamage,defense,behaviour,primaryAbility,secondaryAbility,statusEffect,resistance,baseScore,minPlayerLevel,maxPlayerLevel,requiredDifficulty
-Iron Lord,boss,castle,8000,10000,700,900,300,aggressive,greatsword,earthquake,intimidation,physical,80,40,100,hard
-Poison Hydra,boss,swamp,9000,12000,600,800,250,aggressive,poison-spit,regeneration,poison,poison,85,35,100,hard
-Mountain Dragon,boss,mountain,10000,15000,800,1000,400,aggressive,fire-breath,flying,fire,fire,250,50,100,hard
-Ancient Treant,boss,forest,12000,15000,500,700,350,defensive,root-slam,entangle,slow,nature,180,30,90,hard
-Sand Titan,boss,desert,11000,13000,650,850,280,aggressive,sandstorm,earthquake,blind,earth,210,40,100,hard

@@ -1,9 +1,0 @@
-enemyName,enemyType,region,minHp,maxHp,minDamage,maxDamage,defense,behaviour,primaryAbility,secondaryAbility,statusEffect,resistance,baseScore,minPlayerLevel,maxPlayerLevel,requiredDifficulty
-Swamp Creature,creature,swamp,1200,1800,100,150,50,aggressive,melee,poison-bite,poison,water,60,1,30,medium
-Iron Knight,knight,castle,2000,3000,150,250,100,defensive,melee,shield-bash,,physical,70,10,40,medium
-Mountain Harpy,bird,mountain,1500,2200,120,200,60,aggressive,flying,dive-attack,wind,,65,15,35,medium-hard
-Forest Spirit,spirit,forest,1800,2500,130,220,70,stealth,magic,entangle,slow,magic,65,20,45,medium
-Desert Scorpion,creature,desert,1600,2300,140,240,80,aggressive,melee,poison-sting,poison,poison,55,5,25,medium
-Castle Archer,archer,castle,1800,2400,130,210,60,ranged,bow,quick-shot,,,45,5,30,medium
-Swamp Witch,witch,swamp,2500,3500,200,300,80,defensive,magic,poison-cloud,poison,magic,80,25,50,medium-hard
-Stone Golem,golem,mountain,3500,5000,250,350,200,defensive,melee,earth-slam,,physical,90,30,60,medium-hard
