@@ -169,7 +169,7 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                     </h3>
 
                     <div className="space-y-2">
-                        <Label className="text-zinc-300">Player name</Label>
+                        <Label className="text-white">Player name</Label>
                         <Input
                             type="text"
                             value={context.player.name}
