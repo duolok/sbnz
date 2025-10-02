@@ -6,12 +6,16 @@ public class BackwardQuery implements Serializable {
     private static final long serialVersionUID = 1L;
     
     private String targetEnemy;
-    private boolean processed = false;
-    private boolean conditionsMet = false;
+    private boolean processed;
+    private boolean conditionsMet;
     private String fallbackEnemy;
     private GameContext context;
+    private String selectedEnemy;
     
-    public BackwardQuery() {}
+    public BackwardQuery() {
+        this.conditionsMet = false;
+        this.processed = false;
+    }
     
     public BackwardQuery(String targetEnemy) {
         this.targetEnemy = targetEnemy;
@@ -20,6 +24,16 @@ public class BackwardQuery implements Serializable {
     public BackwardQuery(String targetEnemy, GameContext context) {
         this.targetEnemy = targetEnemy;
         this.context = context;
+        this.conditionsMet = false;
+        this.processed = false;
+    }
+    
+    public String getSelectedEnemy() {
+        return selectedEnemy;
+    }
+    
+    public void setSelectedEnemy(String selectedEnemy) {
+        this.selectedEnemy = selectedEnemy;
     }
     
     public String getTargetEnemy() { return targetEnemy; }

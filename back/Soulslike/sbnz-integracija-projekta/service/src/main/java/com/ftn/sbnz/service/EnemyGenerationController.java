@@ -9,7 +9,9 @@ import org.kie.api.runtime.KieSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -27,6 +29,88 @@ public class EnemyGenerationController {
     @PostMapping("/generate/backward")
     public Enemy generateEnemyBackward(@RequestBody BackwardQuery query) {
         return enemyService.findSpecificEnemy(query);
+    }
+
+    @GetMapping("/test/backward/boss/{bossName}")
+    public Map<String, Object> testBossSpawn(
+        @PathVariable String bossName,
+        @RequestParam(defaultValue = "40") int playerLevel,
+        @RequestParam(defaultValue = "castle") String region,
+        @RequestParam(defaultValue = "hard") String difficulty
+    ) {
+        Player player = new Player("BossHunter", playerLevel, 
+            Player.PlayerClass.STRENGTH, "greatsword");
+        GameContext context = new GameContext(region, difficulty, "clear", "day", player);
+        BackwardQuery query = new BackwardQuery(bossName, context);
+        
+        Enemy result = enemyService.findSpecificEnemy(query);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("requestedBoss", bossName);
+        response.put("conditionsMet", query.isConditionsMet());
+        response.put("resultEnemy", result.getName());
+        response.put("resultType", result.getType());
+        response.put("meetsRequest", result.getName().equals(bossName));
+        
+        return response;
+    }
+    
+    /**
+     * Test AUTO_COUNTER recursive query
+     */
+    @GetMapping("/test/backward/auto-counter")
+    public Map<String, Object> testAutoCounter(
+        @RequestParam(defaultValue = "MAGE") String playerClass,
+        @RequestParam(defaultValue = "30") int playerLevel,
+        @RequestParam(defaultValue = "castle") String region
+    ) {
+        Player.PlayerClass pClass = Player.PlayerClass.valueOf(playerClass);
+        Player player = new Player("TestPlayer", playerLevel, pClass, "staff");
+        GameContext context = new GameContext(region, "hard", "clear", "day", player);
+        
+        BackwardQuery query = new BackwardQuery("AUTO_COUNTER", context);
+        Enemy result = enemyService.findSpecificEnemy(query);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("playerClass", playerClass);
+        response.put("selectedEnemy", result.getName());
+        response.put("enemyAbilities", result.getAbilities());
+        response.put("enemyResistances", result.getResistances());
+        response.put("isGoodCounter", evaluateCounter(pClass, result));
+        
+        return response;
+    }
+    
+    @GetMapping("/test/backward/region-hierarchy")
+    public Map<String, Object> testRegionHierarchy() {
+        Player player = new Player("Explorer", 25, Player.PlayerClass.DEX, "bow");
+        GameContext context = new GameContext("swamp", 
+            "medium", "clear", "day", player);
+        
+        BackwardQuery query = new BackwardQuery("Iron Knight", context);
+        Enemy result = enemyService.findSpecificEnemy(query);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("requestedRegion", "castle-inner-sanctum");
+        response.put("resultEnemy", result.getName());
+        response.put("enemyRegion", result.getRegion());
+        
+        return response;
+    }
+    
+    private boolean evaluateCounter(Player.PlayerClass playerClass, Enemy enemy) {
+        switch (playerClass) {
+            case DEX:
+                return enemy.getAbilities().contains("stealth") || 
+                       enemy.getStatusEffects().contains("poison");
+            case STRENGTH:
+                return enemy.getAbilities().contains("ranged") || 
+                       enemy.getAbilities().contains("magic");
+            case MAGE:
+                return enemy.getResistances().contains("magic");
+            default:
+                return false;
+        }
     }
     
     @GetMapping("/test/backward")

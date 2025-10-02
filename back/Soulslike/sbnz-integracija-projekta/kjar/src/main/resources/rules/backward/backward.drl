@@ -2,216 +2,265 @@ package rules.backward;
 
 import com.ftn.sbnz.model.models.*;
 
-query canSpawnEnemy(String enemyName, GameContext context, Player player)
-    $enemy : Enemy(name == enemyName, region == context.getRegion())
-    GameContext(difficulty == "medium" || difficulty == "medium-hard" || difficulty == "hard")
-    Player(level >= 20)
-end
+// ==================== NIVO 1: OR ČVOR - REGION ====================
+// Sistem bira region kompatibilan sa ciljnim neprijateljem
 
-query canSpawnBoss(String bossName, GameContext context, Player player)
-    $boss : Enemy(name == bossName, type == "boss", region == context.getRegion())
-    GameContext(difficulty == "medium-hard" || difficulty == "hard")
-    Player(level >= 30)
-end
-
-query canSpawnElite(String eliteName, GameContext context, Player player)
-    $elite : Enemy(name == eliteName, hp > 3000 || damage > 400, region == context.getRegion())
-    GameContext(difficulty != "easy")
-    Player(level >= 20)
-end
-
-query findCounterEnemy(Player player, GameContext context)
-    $enemy : Enemy(region == context.getRegion())
+query level1_regionMatch(String enemyName, GameContext context)
+    // OR čvor - bilo koji od ovih regiona može biti OK
+    $enemy : Enemy(name == enemyName)
     (
-        (Player(playerClass == Player.PlayerClass.DEX) and 
-         (Enemy(abilities contains "stealth" || statusEffects contains "poison")))
+        (Enemy(this == $enemy, region == "castle") and GameContext(this == context, region == "castle"))
         or
-        (Player(playerClass == Player.PlayerClass.STRENGTH) and 
-         (Enemy(abilities contains "ranged" || abilities contains "magic")))
+        (Enemy(this == $enemy, region == "swamp") and GameContext(this == context, region == "swamp"))
         or
-        (Player(playerClass == Player.PlayerClass.MAGE) and 
-         (Enemy(resistances contains "magic")))
+        (Enemy(this == $enemy, region == "mountain") and GameContext(this == context, region == "mountain"))
+        or
+        (Enemy(this == $enemy, region == "desert") and GameContext(this == context, region == "desert"))
     )
 end
 
-rule "Check Iron Lord Boss Spawn Conditions"
+// ==================== NIVO 2: AND ČVOR - DIFFICULTY + LEVEL ====================
+// OBA uslova moraju biti zadovoljena
+
+query level2_difficultyAndLevel(String enemyName, GameContext context, Player player, String enemyType)
+    // Proveri da li je prošao Nivo 1
+    level1_regionMatch(enemyName, context;)
+    
+    // AND čvor - OBA uslova moraju biti true
+    $enemy : Enemy(name == enemyName, type == enemyType)
+    
+    // Boss AND uslovi
+    (
+        (String(this == enemyType, this == "boss") and
+         GameContext(this == context, difficulty == "hard" || difficulty == "medium-hard") and
+         Player(this == player, level >= 30))
+        or
+        // Elite AND uslovi
+        (String(this == enemyType, this == "elite") and
+         GameContext(this == context, difficulty != "easy") and
+         Player(this == player, level >= 20))
+        or
+        // Regular AND uslovi
+        (String(this == enemyType, this == "regular") and
+         Player(this == player, level >= 10))
+    )
+end
+
+// ==================== NIVO 3: AND ČVOR - BUILD + EQUIPMENT ====================
+// Provera kompatibilnosti build-a i opreme
+
+query level3_buildAndEquipment(String enemyName, GameContext context, Player player, String enemyType)
+    // Proveri da li je prošao Nivo 2
+    level2_difficultyAndLevel(enemyName, context, player, enemyType;)
+    
+    $enemy : Enemy(name == enemyName)
+    $player : Player()
+    
+    // AND čvor - build i oprema moraju biti kompatibilni
+    (
+        // DEX build sa odgovarajućom opremom
+        (Player(this == $player, playerClass == Player.PlayerClass.DEX, 
+                weaponType == "dagger" || weaponType == "bow" || weaponType == "katana"))
+        or
+        // STRENGTH build sa odgovarajućom opremom
+        (Player(this == $player, playerClass == Player.PlayerClass.STRENGTH,
+                weaponType == "greatsword" || weaponType == "hammer" || weaponType == "sword"))
+        or
+        // MAGE build sa odgovarajućom opremom
+        (Player(this == $player, playerClass == Player.PlayerClass.MAGE,
+                weaponType == "staff" || weaponType == "wand"))
+    )
+end
+
+// ==================== FINALNI QUERY: KOMPLETNA VALIDACIJA ====================
+
+query canSpawnTargetEnemy(String enemyName, GameContext context, Player player, String enemyType)
+    // Proveri sve 3 nivoa stabla
+    level3_buildAndEquipment(enemyName, context, player, enemyType;)
+    
+    // Vraća enemy samo ako su SVI nivoi prošli
+    $enemy : Enemy(name == enemyName)
+end
+
+// ==================== FALLBACK: OR ALTERNATIVA ====================
+// Ako ciljni enemy ne prolazi, probaj sa drugim protivnicima iz regiona
+
+query fallback_regionalEnemies(GameContext context, Player player)
+    // Nivo 1: Match regiona
+    $enemy : Enemy(region == context.getRegion())
+    
+    // Nivo 2: Prihvatljiva težina
+    (
+        (GameContext(this == context, difficulty == "easy") and Enemy(this == $enemy, hp <= 2000))
+        or
+        (GameContext(this == context, difficulty == "medium" || difficulty == "medium-hard") and 
+         Enemy(this == $enemy, hp > 2000, hp <= 5000))
+        or
+        (GameContext(this == context, difficulty == "hard") and Enemy(this == $enemy, hp > 3000))
+    )
+    
+    // Nivo 3: Odgovara nivou igrača
+    (
+        (Player(this == player, level < 20) and Enemy(this == $enemy, damage < 300))
+        or
+        (Player(this == player, level >= 20, level < 40) and 
+         Enemy(this == $enemy, damage >= 300, damage < 600))
+        or
+        (Player(this == player, level >= 40) and Enemy(this == $enemy, damage >= 600))
+    )
+end
+
+// ==================== PRAVILA KOJA KORISTE STABLO ====================
+
+rule "Try Spawn Target Enemy - Check Full Tree"
+    agenda-group "backward-chain"
+    salience 100
+    no-loop true
+    when
+        $query : BackwardQuery(targetEnemy != null, targetEnemy != "AUTO_COUNTER", processed == false)
+        $context : GameContext($player : player)
+        
+        // Pokušaj da pronadješ enemy koji prolazi kroz SVA 3 nivoa stabla
+        canSpawnTargetEnemy($query.getTargetEnemy(), $context, $player, "boss";)
+        $enemy : Enemy(name == $query.getTargetEnemy())
+    then
+        modify($query) {
+            setConditionsMet(true),
+            setSelectedEnemy($enemy.getName()),
+            setProcessed(true)
+        }
+        System.out.println("✓ BACKWARD TREE SUCCESS: All 3 levels passed for " + $enemy.getName());
+        System.out.println("  Level 1 (Region): PASSED");
+        System.out.println("  Level 2 (Difficulty + Level): PASSED");
+        System.out.println("  Level 3 (Build + Equipment): PASSED");
+end
+
+rule "Fallback - OR Alternative Path"
+    agenda-group "backward-chain"
+    salience 50
+    no-loop true
+    when
+        $query : BackwardQuery(processed == false, conditionsMet == false)
+        $context : GameContext($player : player)
+        
+        // Pokušaj fallback query - drugi protivnici koji prolaze nivoe
+        fallback_regionalEnemies($context, $player;)
+        $enemy : Enemy()
+        
+        // Uzmi prvog koji prolazi
+        not Enemy(score > $enemy.getScore(), region == $context.getRegion())
+    then
+        modify($query) {
+            setFallbackEnemy($enemy.getName()),
+            setProcessed(true)
+        }
+        System.out.println("✗ Target enemy failed tree validation");
+        System.out.println("→ FALLBACK: Using OR alternative - " + $enemy.getName());
+end
+
+// ==================== SPECIFIČNA BOSS PRAVILA SA EKSPLICITNIM STABLOM ====================
+
+rule "Iron Lord - Explicit Tree Validation"
+    agenda-group "backward-chain"
+    salience 95
     no-loop true
     when
         $query : BackwardQuery(targetEnemy == "Iron Lord", processed == false)
-        $context : GameContext(region == "castle", difficulty == "hard")
-        $player : Player(level >= 40)
-        canSpawnBoss("Iron Lord", $context, $player;)
+        $context : GameContext($player : player)
+        
+        // NIVO 1 (OR): Region check
+        level1_regionMatch("Iron Lord", $context;)
+        
+        // NIVO 2 (AND): Difficulty AND Level
+        GameContext(this == $context, region == "castle", difficulty == "hard")
+        Player(this == $player, level >= 40)
+        
+        // NIVO 3 (AND): Build AND Equipment
+        Player(this == $player, 
+               playerClass == Player.PlayerClass.STRENGTH,
+               weaponType == "greatsword" || weaponType == "hammer" || weaponType == "sword")
+        
+        $enemy : Enemy(name == "Iron Lord", type == "boss")
     then
         modify($query) {
             setConditionsMet(true),
+            setSelectedEnemy("Iron Lord"),
             setProcessed(true)
         }
-        System.out.println("Backward Chain: Iron Lord spawn conditions met!");
+        System.out.println("=== IRON LORD TREE VALIDATION ===");
+        System.out.println("✓ Level 1 (Region): castle");
+        System.out.println("✓ Level 2 (Difficulty=hard AND Level≥40)");
+        System.out.println("✓ Level 3 (Build=STRENGTH AND Weapon=greatsword)");
+        System.out.println("→ RESULT: Iron Lord spawned!");
 end
 
-rule "Check Poison Hydra Boss Spawn Conditions"
+rule "Iron Lord Failed - Try Regional Alternative"
+    agenda-group "backward-chain"
+    salience 45
     no-loop true
     when
-        $query : BackwardQuery(targetEnemy == "Poison Hydra", processed == false)
-        $context : GameContext(region == "swamp", difficulty == "hard" || difficulty == "medium-hard")
-        $player : Player(level >= 35)
-        canSpawnBoss("Poison Hydra", $context, $player;)
-    then
-        modify($query) {
-            setConditionsMet(true),
-            setProcessed(true)
-        }
-        System.out.println("Backward Chain: Poison Hydra spawn conditions met!");
-end
-
-rule "Check Mountain Dragon Boss Spawn Conditions"
-    no-loop true
-    when
-        $query : BackwardQuery(targetEnemy == "Mountain Dragon", processed == false)
-        $context : GameContext(region == "mountain", difficulty == "hard")
-        $player : Player(level >= 50)
-        canSpawnBoss("Mountain Dragon", $context, $player;)
-    then
-        modify($query) {
-            setConditionsMet(true),
-            setProcessed(true)
-        }
-        System.out.println("Backward Chain: Mountain Dragon spawn conditions met!");
-end
-
-rule "Check Swamp Witch Elite Conditions"
-    no-loop true
-    when
-        $query : BackwardQuery(targetEnemy == "Swamp Witch", processed == false)
-        $context : GameContext(region == "swamp", difficulty != "easy")
-        $player : Player(level >= 20)
-        canSpawnElite("Swamp Witch", $context, $player;)
-    then
-        modify($query) {
-            setConditionsMet(true),
-            setProcessed(true)
-        }
-        System.out.println("Backward Chain: Swamp Witch spawn conditions met!");
-end
-
-rule "Check Stone Golem Elite Conditions"
-    no-loop true
-    when
-        $query : BackwardQuery(targetEnemy == "Stone Golem", processed == false)
-        $context : GameContext(region == "mountain", difficulty == "medium-hard" || difficulty == "hard")
-        $player : Player(level >= 25)
-        canSpawnElite("Stone Golem", $context, $player;)
-    then
-        modify($query) {
-            setConditionsMet(true),
-            setProcessed(true)
-        }
-        System.out.println("Backward Chain: Stone Golem spawn conditions met!");
-end
-
-rule "Fallback to Regional Enemy - Swamp"
-    no-loop true
-    when
-        $query : BackwardQuery(processed == false, conditionsMet == false)
-        $context : GameContext(region == "swamp")
-        $enemy : Enemy(region == "swamp", type != "boss")
-    then
-        modify($query) {
-            setFallbackEnemy($enemy.getName()),
-            setProcessed(true)
-        }
-        System.out.println("Backward Chain Fallback: Selected " + $enemy.getName() + " for swamp region");
-end
-
-rule "Fallback to Regional Enemy - Castle"
-    no-loop true
-    when
-        $query : BackwardQuery(processed == false, conditionsMet == false)
-        $context : GameContext(region == "castle")
+        $query : BackwardQuery(targetEnemy == "Iron Lord", processed == false)
+        $context : GameContext(region == "castle", $player : player)
+        
+        // Iron Lord conditions NISU zadovoljeni
+        not level3_buildAndEquipment("Iron Lord", $context, $player, "boss";)
+        
+        // Fallback na druge castle enemies
         $enemy : Enemy(region == "castle", type != "boss")
+        fallback_regionalEnemies($context, $player;)
     then
         modify($query) {
             setFallbackEnemy($enemy.getName()),
             setProcessed(true)
         }
-        System.out.println("Backward Chain Fallback: Selected " + $enemy.getName() + " for castle region");
+        System.out.println("=== IRON LORD TREE VALIDATION ===");
+        System.out.println("✗ Failed at some level (OR fallback triggered)");
+        System.out.println("→ Alternative: " + $enemy.getName());
 end
 
-rule "Fallback to Regional Enemy - Mountain"
-    no-loop true
-    when
-        $query : BackwardQuery(processed == false, conditionsMet == false)
-        $context : GameContext(region == "mountain")
-        $enemy : Enemy(region == "mountain", type != "boss")
-    then
-        modify($query) {
-            setFallbackEnemy($enemy.getName()),
-            setProcessed(true)
-        }
-        System.out.println("Backward Chain Fallback: Selected " + $enemy.getName() + " for mountain region");
-end
+// ==================== OPCIONALNA MODIFIKACIJA (Post-selection rules) ====================
 
-rule "Find Counter for DEX Build"
-    no-loop true
+rule "Modify Selected Enemy - Balance Adjustment"
+    agenda-group "post-selection"
+    salience 100
     when
-        $query : BackwardQuery(targetEnemy == "AUTO_COUNTER", processed == false)
+        $query : BackwardQuery(processed == true, selectedEnemy != null)
         $context : GameContext($player : player)
-        Player(this == $player, playerClass == Player.PlayerClass.DEX)
-        $enemy : Enemy(abilities contains "stealth" || statusEffects contains "poison")
-        findCounterEnemy($player, $context;)
+        $enemy : Enemy(name == $query.getSelectedEnemy())
+        
+        // Ako je player prejak, pojačaj enemy-a
+        Player(this == $player, level > $enemy.getHp() / 100)
     then
-        modify($query) {
-            setFallbackEnemy($enemy.getName()),
-            setConditionsMet(true),
-            setProcessed(true)
+        double hpBoost = 1.2;
+        double dmgBoost = 1.15;
+        
+        modify($enemy) {
+            setHp((int)($enemy.getHp() * hpBoost)),
+            setDamage((int)($enemy.getDamage() * dmgBoost))
         }
-        System.out.println("Backward Chain: Found DEX counter - " + $enemy.getName());
+        
+        System.out.println("→ POST-SELECTION MODIFICATION:");
+        System.out.println("  Enemy balanced for high-level player");
+        System.out.println("  HP: +" + ((hpBoost - 1) * 100) + "%");
+        System.out.println("  DMG: +" + ((dmgBoost - 1) * 100) + "%");
 end
 
-rule "Find Counter for STRENGTH Build"
-    no-loop true
+rule "Add Status Effects Based on Context"
+    agenda-group "post-selection"
+    salience 90
     when
-        $query : BackwardQuery(targetEnemy == "AUTO_COUNTER", processed == false)
-        $context : GameContext($player : player)
-        Player(this == $player, playerClass == Player.PlayerClass.STRENGTH)
-        $enemy : Enemy(abilities contains "ranged" || abilities contains "magic")
-        findCounterEnemy($player, $context;)
+        $query : BackwardQuery(processed == true, selectedEnemy != null)
+        $context : GameContext(weather == "rain", $enemy : selectedEnemy)
+        $enemy : Enemy(name == $context.getSelectedEnemy())
+        
+        // Dodaj water-based abilities zbog kiše
+        not Enemy(this == $enemy, abilities contains "water-attack")
     then
-        modify($query) {
-            setFallbackEnemy($enemy.getName()),
-            setConditionsMet(true),
-            setProcessed(true)
+        modify($enemy) {
+            getAbilities().add("water-attack"),
+            setDamage($enemy.getDamage() + 50)
         }
-        System.out.println("Backward Chain: Found STRENGTH counter - " + $enemy.getName());
-end
-
-rule "Find Counter for MAGE Build"
-    no-loop true
-    when
-        $query : BackwardQuery(targetEnemy == "AUTO_COUNTER", processed == false)
-        $context : GameContext($player : player)
-        Player(this == $player, playerClass == Player.PlayerClass.MAGE)
-        $enemy : Enemy(resistances contains "magic")
-        findCounterEnemy($player, $context;)
-    then
-        modify($query) {
-            setFallbackEnemy($enemy.getName()),
-            setConditionsMet(true),
-            setProcessed(true)
-        }
-        System.out.println("Backward Chain: Found MAGE counter - " + $enemy.getName());
-end
-
-rule "No Conditions Met - Default Fallback"
-    no-loop true
-    when
-        $query : BackwardQuery(processed == false, conditionsMet == false)
-        $context : GameContext()
-        $enemy : Enemy()
-    then
-        modify($query) {
-            setFallbackEnemy($enemy.getName()),
-            setProcessed(true)
-        }
-        System.out.println("Backward Chain: Default fallback to " + $enemy.getName());
+        
+        System.out.println("→ POST-SELECTION MODIFICATION:");
+        System.out.println("  Added 'water-attack' due to rain weather");
 end
