@@ -1,39 +1,35 @@
-// src/components/EnemyGenerator/EnemyCard.tsx
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Enemy } from '@/types/enemy';
 import {
-    Heart,
-    Sword,
-    Shield,
-    Zap,
-    Target,
-    Flame,
     Skull,
-    Eye,
-    Activity
+    Heart,
+    Swords,
+    Shield,
+    Sparkles,
+    Zap,
+    Flame,
+    Loader2,
+    Crown,
+    Star
 } from 'lucide-react';
+import { Enemy } from '@/types/enemy';
 
 interface EnemyCardProps {
     enemy: Enemy | null;
-    loading?: boolean;
+    loading: boolean;
 }
 
-const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, loading = false }) => {
+export default function EnemyCard({ enemy, loading }: EnemyCardProps) {
     if (loading) {
         return (
-            <Card className="w-full h-full souls-border enemy-card-glow bg-gradient-to-br from-zinc-900 via-black to-zinc-900">
-                <CardHeader>
-                    <div className="h-8 bg-zinc-800 rounded animate-pulse" />
-                    <div className="h-4 bg-zinc-800 rounded w-2/3 animate-pulse mt-2" />
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="h-20 bg-zinc-800 rounded animate-pulse" />
-                        ))}
+            <Card className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 border border-zinc-800/50 backdrop-blur-sm shadow-2xl overflow-hidden">
+                <CardContent className="flex flex-col items-center justify-center py-20">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-red-600 rounded-full blur-xl opacity-50 animate-pulse" />
+                        <Loader2 className="w-16 h-16 text-orange-400 animate-spin relative z-10" />
                     </div>
+                    <p className="text-zinc-400 mt-6 text-lg animate-pulse">Summoning enemy...</p>
                 </CardContent>
             </Card>
         );
@@ -41,118 +37,123 @@ const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, loading = false }) => {
 
     if (!enemy) {
         return (
-            <Card className="w-full h-full souls-border bg-gradient-to-br from-zinc-900 via-black to-zinc-900 flex items-center justify-center min-h-[500px]">
-                <div className="text-center p-8">
-                    <Skull className="w-16 h-16 mx-auto text-zinc-600 mb-4" />
-                    <p className="text-zinc-400 text-lg">Enemy is still not generated</p>
-                    <p className="text-zinc-500 text-sm mt-2">Configure context and click "Generate"</p>
-                </div>
+            <Card className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 border border-zinc-800/30 backdrop-blur-sm shadow-xl overflow-hidden group hover:border-zinc-700/50 transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <CardContent className="flex flex-col items-center justify-center py-20 relative">
+                    <div className="relative mb-6">
+                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-600 to-zinc-700 rounded-full blur-2xl opacity-30" />
+                        <Skull className="w-20 h-20 text-zinc-600 relative z-10 animate-float" />
+                    </div>
+                    <p className="text-zinc-500 text-lg font-semibold">No Enemy Generated</p>
+                    <p className="text-zinc-600 text-sm mt-2">Select options and generate</p>
+                </CardContent>
             </Card>
         );
     }
 
-    const getStatPercentage = (value: number, max: number) => (value / max) * 100;
-    const maxHp = 10000;
-    const maxDamage = 1000;
-    const maxDefense = 600;
-
-    const getTypeIcon = (type: string) => {
-        switch (type.toLowerCase()) {
-            case 'boss': return <Flame className="w-5 h-5 text-red-500" />;
-            case 'witch': return <Eye className="w-5 h-5 text-purple-500" />;
-            case 'knight': return <Shield className="w-5 h-5 text-gray-400" />;
-            case 'goblin': return <Target className="w-5 h-5 text-green-500" />;
-            default: return <Skull className="w-5 h-5 text-orange-500" />;
-        }
+    const getTypeColor = (type: string) => {
+        const colors: Record<string, string> = {
+            boss: 'from-red-600 to-red-800',
+            elite: 'from-purple-600 to-purple-800',
+            miniboss: 'from-orange-600 to-orange-800',
+            regular: 'from-blue-600 to-blue-800',
+            creature: 'from-green-600 to-green-800',
+            undead: 'from-gray-600 to-gray-800'
+        };
+        return colors[type] || 'from-zinc-600 to-zinc-800';
     };
 
+    const getTypeIcon = (type: string) => {
+        if (type === 'boss') return <Crown className="w-5 h-5" />;
+        if (type === 'elite') return <Star className="w-5 h-5" />;
+        return <Skull className="w-5 h-5" />;
+    };
+
+    const maxStat = Math.max(enemy.hp / 10, enemy.damage * 10, enemy.defense * 10);
+
     return (
-        <Card className="w-full souls-border enemy-card-glow bg-gradient-to-br from-zinc-900 via-black to-zinc-900 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500 opacity-5 rounded-full blur-3xl" />
-            <CardHeader className="relative">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-3xl souls-glow text-orange-400 flex items-center gap-3">
-                        {getTypeIcon(enemy.type)}
-                        {enemy.name}
-                    </CardTitle>
-                    {enemy.score > 150 && (
-                        <Badge variant="outline" className="border-yellow-600 text-yellow-500 animate-pulse">
-                            Elite
+        <Card className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 border border-zinc-800/50 backdrop-blur-sm shadow-2xl overflow-hidden group hover:border-orange-600/30 transition-all duration-500 animate-fade-in">
+            {/* Glowing header background */}
+            <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-orange-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+            <CardHeader className="relative border-b border-zinc-800/50 pb-6">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                        <CardTitle className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-orange-400 to-red-400 mb-2 animate-gradient-x">
+                            {enemy.name}
+                        </CardTitle>
+                        <CardDescription className="text-zinc-400 flex items-center gap-2">
+                            Region: <span className="text-orange-400 font-semibold capitalize">{enemy.region}</span>
+                        </CardDescription>
+                    </div>
+
+                    <div className="relative">
+                        <div className={`absolute inset-0 bg-gradient-to-r ${getTypeColor(enemy.type)} rounded-lg blur-lg opacity-50`} />
+                        <Badge className={`bg-gradient-to-r ${getTypeColor(enemy.type)} text-white border-none shadow-lg px-3 py-1.5 relative z-10 flex items-center gap-1`}>
+                            {getTypeIcon(enemy.type)}
+                            <span className="font-bold capitalize">{enemy.type}</span>
                         </Badge>
-                    )}
+                    </div>
                 </div>
-                <CardDescription className="text-zinc-400 mt-2">
-                    <span className="capitalize">{enemy.type}</span> •
-                    <span className="capitalize ml-2">{enemy.region}</span> •
-                    <span className="capitalize ml-2 text-orange-300">{enemy.behaviour}</span>
-                </CardDescription>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-3 mt-6">
+                    <div className="bg-gradient-to-br from-red-900/20 to-red-950/20 border border-red-800/30 rounded-lg p-3 backdrop-blur-sm hover:border-red-700/50 transition-all duration-300 group/stat">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 bg-red-900/30 rounded-md group-hover/stat:bg-red-800/40 transition-colors">
+                                <Heart className="w-4 h-4 text-red-400" />
+                            </div>
+                            <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">HP</span>
+                        </div>
+                        <p className="text-2xl font-bold text-red-300">{Math.round(enemy.hp)}</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-orange-900/20 to-orange-950/20 border border-orange-800/30 rounded-lg p-3 backdrop-blur-sm hover:border-orange-700/50 transition-all duration-300 group/stat">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 bg-orange-900/30 rounded-md group-hover/stat:bg-orange-800/40 transition-colors">
+                                <Swords className="w-4 h-4 text-orange-400" />
+                            </div>
+                            <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">DMG</span>
+                        </div>
+                        <p className="text-2xl font-bold text-orange-300">{Math.round(enemy.damage)}</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-blue-900/20 to-blue-950/20 border border-blue-800/30 rounded-lg p-3 backdrop-blur-sm hover:border-blue-700/50 transition-all duration-300 group/stat">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-1.5 bg-blue-900/30 rounded-md group-hover/stat:bg-blue-800/40 transition-colors">
+                                <Shield className="w-4 h-4 text-blue-400" />
+                            </div>
+                            <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">DEF</span>
+                        </div>
+                        <p className="text-2xl font-bold text-blue-300">{Math.round(enemy.defense)}</p>
+                    </div>
+                </div>
+
+                {/* Behavior Badge */}
+                <div className="mt-4 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-yellow-500" />
+                    <span className="text-zinc-400 text-sm">Behavior:</span>
+                    <Badge variant="outline" className="border-yellow-700/50 text-yellow-400 capitalize bg-yellow-900/10">
+                        {enemy.behaviour}
+                    </Badge>
+                </div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
-                {/* Stats */}
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <span className="flex items-center gap-2 text-zinc-300">
-                                <Heart className="w-4 h-4 text-red-500" />
-                                HP
-                            </span>
-                            <span className="text-red-400 font-bold">{enemy.hp}</span>
-                        </div>
-                        <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
-                            <div
-                                className="h-full hp-bar rounded-full transition-all duration-500"
-                                style={{ width: `${getStatPercentage(enemy.hp, maxHp)}%` }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <span className="flex items-center gap-2 text-zinc-300">
-                                <Sword className="w-4 h-4 text-orange-500" />
-                                Damage
-                            </span>
-                            <span className="text-orange-400 font-bold">{enemy.damage}</span>
-                        </div>
-                        <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
-                            <div
-                                className="h-full dmg-bar rounded-full transition-all duration-500"
-                                style={{ width: `${getStatPercentage(enemy.damage, maxDamage)}%` }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <span className="flex items-center gap-2 text-zinc-300">
-                                <Shield className="w-4 h-4 text-gray-500" />
-                                Defense
-                            </span>
-                            <span className="text-gray-400 font-bold">{enemy.defense}</span>
-                        </div>
-                        <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
-                            <div
-                                className="h-full def-bar rounded-full transition-all duration-500"
-                                style={{ width: `${getStatPercentage(enemy.defense, maxDefense)}%` }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
+            <CardContent className="space-y-6 pt-6 relative">
                 {/* Abilities */}
                 {enemy.abilities && enemy.abilities.length > 0 && (
-                    <div>
-                        <h4 className="text-sm font-semibold text-zinc-400 mb-2 flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-yellow-500" />
-                            Abilities
-                        </h4>
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-orange-900/30 rounded-md">
+                                <Flame className="w-4 h-4 text-orange-400" />
+                            </div>
+                            <h3 className="text-sm font-bold text-orange-400 uppercase tracking-wider">Abilities</h3>
+                        </div>
                         <div className="flex flex-wrap gap-2">
-                            {enemy.abilities.map((ability) => (
+                            {enemy.abilities.map((ability, index) => (
                                 <Badge
-                                    key={ability}
-                                    variant="secondary"
-                                    className="bg-zinc-800 hover:bg-zinc-700 border-yellow-900 text-yellow-200"
+                                    key={index}
+                                    className="bg-gradient-to-r from-orange-900/40 to-red-900/40 text-orange-200 border border-orange-700/30 hover:border-orange-600/50 transition-all duration-300 hover:scale-105 capitalize"
                                 >
                                     {ability}
                                 </Badge>
@@ -161,40 +162,20 @@ const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, loading = false }) => {
                     </div>
                 )}
 
-                {/* Status Effects */}
-                {enemy.statusEffects && enemy.statusEffects.length > 0 && (
-                    <div>
-                        <h4 className="text-sm font-semibold text-zinc-400 mb-2 flex items-center gap-2">
-                            <Activity className="w-4 h-4 text-purple-500" />
-                            Status effect
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                            {enemy.statusEffects.map((effect) => (
-                                <Badge
-                                    key={effect}
-                                    variant="outline"
-                                    className="border-purple-900 text-purple-300"
-                                >
-                                    {effect}
-                                </Badge>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* Resistances */}
                 {enemy.resistances && enemy.resistances.length > 0 && (
-                    <div>
-                        <h4 className="text-sm font-semibold text-zinc-400 mb-2 flex items-center gap-2">
-                            <Shield className="w-4 h-4 text-blue-500" />
-                            Resistances:
-                        </h4>
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-blue-900/30 rounded-md">
+                                <Shield className="w-4 h-4 text-blue-400" />
+                            </div>
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider">Resistances</h3>
+                        </div>
                         <div className="flex flex-wrap gap-2">
-                            {enemy.resistances.map((resistance) => (
+                            {enemy.resistances.map((resistance, index) => (
                                 <Badge
-                                    key={resistance}
-                                    variant="outline"
-                                    className="border-blue-900 text-blue-300"
+                                    key={index}
+                                    className="bg-gradient-to-r from-blue-900/40 to-cyan-900/40 text-blue-200 border border-blue-700/30 hover:border-blue-600/50 transition-all duration-300 hover:scale-105 capitalize"
                                 >
                                     {resistance}
                                 </Badge>
@@ -203,16 +184,63 @@ const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, loading = false }) => {
                     </div>
                 )}
 
-                {/* Score */}
-                <div className="pt-4 border-t border-zinc-800">
-                    <div className="flex justify-between items-center">
-                        <span className="text-zinc-400">Score</span>
-                        <span className="text-2xl font-bold text-orange-400">{enemy.score}</span>
+                {/* Status Effects */}
+                {enemy.statusEffects && enemy.statusEffects.length > 0 && (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-purple-900/30 rounded-md">
+                                <Sparkles className="w-4 h-4 text-purple-400" />
+                            </div>
+                            <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider">Status Effects</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {enemy.statusEffects.map((effect, index) => (
+                                <Badge
+                                    key={index}
+                                    className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 text-purple-200 border border-purple-700/30 hover:border-purple-600/50 transition-all duration-300 hover:scale-105 capitalize"
+                                >
+                                    {effect}
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Weaknesses */}
+                {enemy.weaknesses && enemy.weaknesses.length > 0 && (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-red-900/30 rounded-md">
+                                <Skull className="w-4 h-4 text-red-400" />
+                            </div>
+                            <h3 className="text-sm font-bold text-red-400 uppercase tracking-wider">Weaknesses</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {Array.from(enemy.weaknesses).map((weakness, index) => (
+                                <Badge
+                                    key={index}
+                                    className="bg-gradient-to-r from-red-900/40 to-rose-900/40 text-red-200 border border-red-700/30 hover:border-red-600/50 transition-all duration-300 hover:scale-105 capitalize"
+                                >
+                                    {weakness}
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Score Badge */}
+                <div className="pt-4 border-t border-zinc-800/50">
+                    <div className="flex items-center justify-between">
+                        <span className="text-zinc-400 text-sm font-semibold">Difficulty Score</span>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-red-600 rounded-full blur-md opacity-50" />
+                            <Badge className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold text-lg px-4 py-1.5 relative z-10 shadow-lg">
+                                {Math.round(enemy.score)}
+                            </Badge>
+                        </div>
                     </div>
                 </div>
             </CardContent>
         </Card>
     );
-};
-
-export default EnemyCard;
+}
