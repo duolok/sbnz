@@ -161,7 +161,7 @@ export default function CreateEnemyForm({ onEnemyCreated }: CreateEnemyFormProps
                             id="name"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="text-white bg-zinc-900/50 border-zinc-700/50 hover:border-green-600/50 focus:border-green-500 transition-all duration-300 backdrop-blur-sm"
+                            className="bg-zinc-900/50 border-zinc-700/50 hover:border-green-600/50 focus:border-green-500 transition-all duration-300 backdrop-blur-sm"
                             placeholder="e.g., Shadow Knight"
                         />
                     </div>
@@ -441,34 +441,36 @@ export default function CreateEnemyForm({ onEnemyCreated }: CreateEnemyFormProps
                     </div>
                 </div>
 
-                {/* Submit Buttons */}
-                <div className="flex gap-4 pt-4">
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="text-white flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-4 text-lg shadow-xl shadow-green-600/30 hover:shadow-green-600/50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                Forging...
-                            </>
-                        ) : (
-                            <>
-                                <Plus className="mr-2 h-5 w-5" />
-                                Forge Enemy
-                            </>
-                        )}
-                    </Button>
+                <div className="space-y-4 pt-4">
+                                {/* Submit Buttons */}
+                <Button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-4 text-lg shadow-xl shadow-green-600/30 hover:shadow-green-600/50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Forging...
+                        </>
+                    ) : (
+                        <>
+                            <Plus className="mr-2 h-5 w-5" />
+                            Forge Enemy
+                        </>
+                    )}
+                </Button>
 
-                    <Button
-                        onClick={resetForm}
-                        variant="outline"
-                        className="border-zinc-700/50 hover:bg-zinc-800/50 hover:border-zinc-600 transition-all duration-300 px-8"
-                    >
-                        Reset
-                    </Button>
-                </div>
+                <Button
+                    onClick={resetForm}
+                    variant="outline"
+                    className="w-full border-zinc-700/50 hover:bg-zinc-800/50 hover:border-zinc-600 transition-all duration-300"
+                >
+                    Reset
+                </Button>
+            </div>
+
+
             </CardContent>
         </Card>
     );

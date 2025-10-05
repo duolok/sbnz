@@ -10,7 +10,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
+import { Slider, SliderTrack, SliderRange, SliderThumb } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     REGIONS,
@@ -167,38 +167,67 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                         <User className="w-5 h-5" />
                         Player Configuration
                     </h3>
+<div className="space-y-4">
+    <Label className="text-zinc-300 text-lg font-semibold">
+        Player Level: <span className="text-orange-400 font-bold ml-2">{context.player.level}</span>
+    </Label>
+    
+    <div className="relative pt-8 pb-4">
+        <Slider
+            value={[context.player.level]}
+            onValueChange={(value) => handleChange('player.level', value[0])}
+            max={100}
+            min={1}
+            step={1}
+            className="relative flex items-center select-none touch-none w-full h-6"
+        >
+        </Slider>
+        
+        {/* Enhanced level markers with better styling */}
+        <div className="absolute -bottom-2 w-full flex justify-between px-2">
+            {[1, 25, 50, 75, 100].map((marker) => (
+                <div key={marker} className="flex flex-col items-center">
+                    {/* Marker line */}
+                    <div 
+                        className={`w-0.5 h-2 mb-1 transition-all duration-300 ${
+                            context.player.level >= marker 
+                                ? 'bg-orange-400 h-3' 
+                                : 'bg-zinc-500'
+                        }`}
+                    />
+                    {/* Marker label */}
+                    <span 
+                        className={`text-xs font-medium transition-all duration-300 ${
+                            context.player.level >= marker 
+                                ? 'text-orange-300 font-bold scale-110' 
+                                : 'text-zinc-400'
+                        }`}
+                    >
+                        {marker}
+                    </span>
+                </div>
+            ))}
+        </div>
+        
+    </div>
+    
+    {/* Additional visual feedback */}
+    <div className="flex justify-between items-center text-sm text-zinc-400 mt-6">
+        <span className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-orange-400 rounded-full" />
+            Beginner
+        </span>
+        <span className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-orange-500 rounded-full" />
+            Intermediate
+        </span>
+        <span className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-orange-600 rounded-full" />
+            Expert
+        </span>
+    </div>
+</div>
 
-                    <div className="space-y-2">
-                        <Label className="text-white">Player name</Label>
-                        <Input
-                            type="text"
-                            value={context.player.name}
-                            onChange={(e) => handleChange('player.name', e.target.value)}
-                            className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 transition-colors"
-                            placeholder="Unesi ime igrača"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-zinc-300">
-                            Player level: <span className="text-orange-400 font-bold">{context.player.level}</span>
-                        </Label>
-                        <Slider
-                            value={[context.player.level]}
-                            onValueChange={(value) => handleChange('player.level', value[0])}
-                            max={100}
-                            min={1}
-                            step={1}
-                            className="py-4"
-                        />
-                        <div className="flex justify-between text-xs text-zinc-500">
-                            <span>1</span>
-                            <span>25</span>
-                            <span>50</span>
-                            <span>75</span>
-                            <span>100</span>
-                        </div>
-                    </div>
 
                     <div className="space-y-2">
                         <Label className="text-zinc-300">Player class</Label>
@@ -208,7 +237,13 @@ const GameContextForm: React.FC<GameContextFormProps> = ({ context, onChange }) 
                         >
                             {PLAYER_CLASSES.map((playerClass) => (
                                 <div key={playerClass.value} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors">
-                                    <RadioGroupItem value={playerClass.value} id={playerClass.value} className="mt-1" />
+                                    <RadioGroupItem 
+                                        value={playerClass.value} 
+                                        id={playerClass.value}
+                                        className="mt-1 h-5 w-5 text-orange-500 bg-zinc-800 border-zinc-400 focus:ring-2 focus:ring-orange-300 focus:ring-offset-2 focus:ring-offset-zinc-900" 
+                                    />
+
+
                                     <Label htmlFor={playerClass.value} className="cursor-pointer flex-1">
                                         <div className="flex items-center gap-2">
                                             <span>{playerClass.icon}</span>

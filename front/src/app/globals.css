@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -119,4 +121,18 @@
   body {
     @apply bg-background text-foreground;
   }
+
+/* Add to your global CSS */
+.slider-thumb {
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2);
+    transition: all 0.2s ease-in-out;
 }
+
+.slider-thumb:hover {
+    box-shadow: 0 0 0 6px rgba(249, 115, 22, 0.3);
+    transform: scale(1.1);
+}
+
+.slider-track {
+    background: linear-gradient(90deg, #3f3f46 0%, #52525b 50%, #3f3f46 100%);
+}}
