@@ -44,8 +44,6 @@ public class EnemyGenerationService {
         this.kieContainer = kieContainer;
     }
 
-    // ==================== FORWARD CHAINING ====================
-    
     public Enemy generateEnemy(GameContext context) {
         log.info("Starting FORWARD CHAINING enemy generation for context: {}", context);
         
@@ -269,88 +267,79 @@ public class EnemyGenerationService {
         return fallback;
     }
 
-    // ==================== BACKWARD CHAINING WITH TREE STRUCTURE ====================
-    
     public Enemy findSpecificEnemy(BackwardQuery query) {
-        log.info("╔════════════════════════════════════════════════════════════════╗");
-        log.info("║          STARTING BACKWARD CHAINING TREE TRAVERSAL            ║");
-        log.info("╚════════════════════════════════════════════════════════════════╝");
-        log.info("Target Enemy: {}", query.getTargetEnemy());
+    log.info("╔════════════════════════════════════════════════════════════════╗");
+    log.info("║          STARTING BACKWARD CHAINING TREE TRAVERSAL            ║");
+    log.info("╚═══════════════════════════ggV═════════════════════════════════════╝");
+    log.info("Target Enemy: {}", query.getTargetEnemy());
+    
+    KieSession kieSession = null;
+    try {
+        kieSession = kieContainer.newKieSession("backwardChainingSession");
+        List<Enemy> enemyCandidates = new ArrayList<>();
         
-        KieSession kieSession = null;
-        try {
-            kieSession = kieContainer.newKieSession("backwardChainingSession");
-            List<Enemy> enemyCandidates = new ArrayList<>();
-            
-            kieSession.setGlobal("enemyCandidates", enemyCandidates);
-            
-            kieSession.insert(query);
-            if (query.getContext() != null) {
-                kieSession.insert(query.getContext());
-                log.info("Context: Region={}, Difficulty={}, Weather={}, Time={}", 
-                    query.getContext().getRegion(),
-                    query.getContext().getDifficulty(),
-                    query.getContext().getWeather(),
-                    query.getContext().getTimeOfDay());
-                
-                if (query.getContext().getPlayer() != null) {
-                    kieSession.insert(query.getContext().getPlayer());
-                    log.info("Player: Name={}, Level={}, Class={}, Weapon={}", 
-                        query.getContext().getPlayer().getName(),
-                        query.getContext().getPlayer().getLevel(),
-                        query.getContext().getPlayer().getPlayerClass(),
-                        query.getContext().getPlayer().getWeaponType());
-                }
-            }
-            
-            loadAllEnemiesForBackwardAsCopies(kieSession, enemyCandidates);
-            
-            // Execute backward chaining with tree validation
-            log.info("\n┌─────────────────────────────────────────────────────────┐");
-            log.info("│  PHASE 1: BACKWARD CHAIN - TREE VALIDATION             │");
-            log.info("└─────────────────────────────────────────────────────────┘");
-            
-            kieSession.getAgenda().getAgendaGroup("backward-chain").setFocus();
-            int backwardRulesFired = kieSession.fireAllRules();
-            log.info("Backward chain rules fired: {}", backwardRulesFired);
-            
-            // Log tree traversal results
-            logTreeTraversalResults(kieSession, query);
-            
-            // If enemy was selected, apply post-selection modifications
-            if (query.isConditionsMet() && query.getSelectedEnemy() != null) {
-                log.info("\n┌─────────────────────────────────────────────────────────┐");
-                log.info("│  PHASE 2: POST-SELECTION MODIFICATIONS                 │");
-                log.info("└─────────────────────────────────────────────────────────┘");
-                
-                kieSession.getAgenda().getAgendaGroup("post-selection").setFocus();
-                int postSelectionRules = kieSession.fireAllRules();
-                log.info("Post-selection rules fired: {}", postSelectionRules);
-            }
-            
-            Enemy result = handleBackwardResult(query, enemyCandidates);
-            
-            log.info("\n╔════════════════════════════════════════════════════════════════╗");
-            log.info("║            BACKWARD CHAINING COMPLETE                          ║");
-            log.info("╠════════════════════════════════════════════════════════════════╣");
-            log.info("║ Final Result: {}", String.format("%-43s", result.getName()) + "║");
-            log.info("║ Type: {}", String.format("%-51s", result.getType()) + "║");
-            log.info("║ HP: {}", String.format("%-53d", result.getHp()) + "║");
-            log.info("║ Damage: {}", String.format("%-49d", result.getDamage()) + "║");
-            log.info("╚════════════════════════════════════════════════════════════════╝");
-            
-            return result;
-            
-        } catch (Exception e) {
-            log.error("Error in backward chaining", e);
-            return generateEnemy(query.getContext() != null ? query.getContext() : 
-                new GameContext("castle", "medium", "clear", "day", null));
-        } finally {
-            if (kieSession != null) {
-                kieSession.dispose();
+        kieSession.setGlobal("enemyCandidates", enemyCandidates);
+        
+        loadAllEnemiesForBackwardAsCopies(kieSession, enemyCandidates);
+        
+        List<String> candidateNames = enemyCandidates.stream()
+            .map(Enemy::getName)
+            .collect(Collectors.toList());
+        
+        query.setCandidateNames(candidateNames);
+        query.setCurrentIndex(0);
+        
+        log.info("Loaded {} enemy candidates", candidateNames.size());
+        log.info("Candidate list: {}", candidateNames);
+        
+        kieSession.insert(query);
+        if (query.getContext() != null) {
+            kieSession.insert(query.getContext());
+            if (query.getContext().getPlayer() != null) {
+                kieSession.insert(query.getContext().getPlayer());
             }
         }
+        
+        log.info("\n┌─────────────────────────────────────────────────────────┐");
+        log.info("│  BACKWARD CHAIN - RECURSIVE TREE VALIDATION            │");
+        log.info("└─────────────────────────────────────────────────────────┘");
+
+        kieSession.getAgenda().getAgendaGroup("backward-chain").setFocus();
+        int rulesFired = kieSession.fireAllRules();
+        log.info("Total rules fired: {}", rulesFired);
+        
+        // Post-selection modifications
+        if (query.isConditionsMet() && query.getSelectedEnemy() != null) {
+            log.info("\n┌─────────────────────────────────────────────────────────┐");
+            log.info("│  PHASE 2: POST-SELECTION MODIFICATIONS                 │");
+            log.info("└─────────────────────────────────────────────────────────┘");
+            
+            kieSession.getAgenda().getAgendaGroup("post-selection").setFocus();
+            int postRules = kieSession.fireAllRules();
+            log.info("Post-selection rules fired: {}", postRules);
+        }
+        
+        Enemy result = handleBackwardResult(query, enemyCandidates);
+        
+        log.info("\n╔════════════════════════════════════════════════════════════════╗");
+        log.info("║            BACKWARD CHAINING COMPLETE                          ║");
+        log.info("╠════════════════════════════════════════════════════════════════╣");
+        log.info("║ Result: {}", String.format("%-49s", result.getName()) + "║");
+        log.info("║ HP: {}, DMG: {}", result.getHp(), result.getDamage());
+        log.info("╚════════════════════════════════════════════════════════════════╝");
+        
+        return result;
+        
+    } catch (Exception e) {
+        log.error("Error in backward chaining", e);
+        return createFallbackEnemy(query.getContext());
+    } finally {
+        if (kieSession != null) {
+            kieSession.dispose();
+        }
     }
+}
+    
 
     private void logTreeTraversalResults(KieSession kieSession, BackwardQuery query) {
         if (query.getContext() == null || query.getContext().getPlayer() == null) {
@@ -370,11 +359,11 @@ public class EnemyGenerationService {
             );
             
             if (level1Results.size() > 0) {
-                log.info("✓ LEVEL 1 (OR): Region Match - PASSED");
+                log.info("LEVEL 1 (OR): Region Match - PASSED");
                 log.info("  └─ Region: {} matches enemy region", query.getContext().getRegion());
             } else {
-                log.info("✗ LEVEL 1 (OR): Region Match - FAILED");
-                log.info("  └─ Region: {} does not match enemy", query.getContext().getRegion());
+                log.info("LEVEL 1 (OR): Region Match - FAILED");
+                log.info("  Region: {} does not match enemy", query.getContext().getRegion());
             }
             
             // Check Level 2: Difficulty and Level
@@ -388,12 +377,12 @@ public class EnemyGenerationService {
             );
             
             if (level2Results.size() > 0) {
-                log.info("✓ LEVEL 2 (AND): Difficulty={} AND Level={} - PASSED", 
+                log.info("LEVEL 2 (AND): Difficulty={} AND Level={} - PASSED", 
                     query.getContext().getDifficulty(),
                     query.getContext().getPlayer().getLevel());
             } else {
-                log.info("✗ LEVEL 2 (AND): Difficulty OR Level check - FAILED");
-                log.info("  └─ Difficulty: {}, Player Level: {}", 
+                log.info("LEVEL 2 (AND): Difficulty OR Level check - FAILED");
+                log.info(" Difficulty: {}, Player Level: {}", 
                     query.getContext().getDifficulty(),
                     query.getContext().getPlayer().getLevel());
             }
@@ -408,12 +397,12 @@ public class EnemyGenerationService {
             );
             
             if (level3Results.size() > 0) {
-                log.info("✓ LEVEL 3 (AND): Build={} AND Weapon={} - PASSED",
+                log.info("LEVEL 3 (AND): Build={} AND Weapon={} - PASSED",
                     query.getContext().getPlayer().getPlayerClass(),
                     query.getContext().getPlayer().getWeaponType());
             } else {
-                log.info("✗ LEVEL 3 (AND): Build OR Weapon check - FAILED");
-                log.info("  └─ Class: {}, Weapon: {}",
+                log.info("LEVEL 3 (AND): Build OR Weapon check - FAILED");
+                log.info(" Class: {}, Weapon: {}",
                     query.getContext().getPlayer().getPlayerClass(),
                     query.getContext().getPlayer().getWeaponType());
             }
@@ -465,39 +454,36 @@ public class EnemyGenerationService {
         log.info("  - Selected Enemy: {}", query.getSelectedEnemy());
         log.info("  - Fallback Enemy: {}", query.getFallbackEnemy());
         
-        // Priority 1: Exact match - all tree conditions met
         if (query.isConditionsMet() && query.getSelectedEnemy() != null) {
-            log.info("→ PRIORITY 1: Exact match (all tree levels passed)");
+            log.info("PRIORITY 1: Exact match (all tree levels passed)");
             Enemy selected = findEnemyByNameInCandidates(query.getSelectedEnemy(), enemyCandidates);
             if (selected != null) {
-                log.info("  ✓ Returning: {}", selected.getName());
+                log.info(" Returning: {}", selected.getName());
                 return selected;
             }
         }
         
-        // Priority 2: Conditions met with fallback (e.g., AUTO_COUNTER)
         if (query.isConditionsMet() && query.getFallbackEnemy() != null) {
             log.info("→ PRIORITY 2: Counter match");
             Enemy fallback = findEnemyByNameInCandidates(query.getFallbackEnemy(), enemyCandidates);
             if (fallback != null) {
-                log.info("  ✓ Returning: {}", fallback.getName());
+                log.info("Returning: {}", fallback.getName());
                 return fallback;
             }
         }
         
-        // Priority 3: Regional fallback (OR alternative)
         if (query.getFallbackEnemy() != null) {
-            log.info("→ PRIORITY 3: Regional fallback (OR alternative)");
+            log.info("PRIORITY 3: Regional fallback (OR alternative)");
             Enemy fallback = findEnemyByNameInCandidates(query.getFallbackEnemy(), enemyCandidates);
             if (fallback != null) {
-                log.info("  ✓ Returning: {}", fallback.getName());
+                log.info("Returning: {}", fallback.getName());
                 return fallback;
             }
         }
         
         // Priority 4: Best candidate by score
         if (!enemyCandidates.isEmpty()) {
-            log.info("→ PRIORITY 4: Best candidate by score");
+            log.info(" PRIORITY 4: Best candidate by score");
             
             List<Enemy> filtered = enemyCandidates;
             if (query.getContext() != null && query.getContext().getRegion() != null) {
@@ -514,7 +500,7 @@ public class EnemyGenerationService {
                     .orElse(null);
                 
                 if (best != null) {
-                    log.info("  ✓ Returning: {} (Score: {})", best.getName(), best.getScore());
+                    log.info("Returning: {} (Score: {})", best.getName(), best.getScore());
                     return best;
                 }
             }
